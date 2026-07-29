@@ -1,0 +1,50 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #17181f;
+  color: #f4f5fa;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 360px;
+  padding: 32px 18px;
+}
+
+.settings-card {
+  background: #22242e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.34);
+  margin: 0 auto;
+  max-width: 760px;
+  overflow: hidden;
+}
+
+header, section, footer { padding: 24px 28px; }
+header { background: #2c2f3b; border-bottom: 1px solid rgba(255,255,255,.1); }
+.eyebrow { color: #ff9b43; font-size: 12px; font-weight: 800; letter-spacing: .08em; margin: 0 0 8px; text-transform: uppercase; }
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 8px; }
+h2 { font-size: 16px; margin-bottom: 12px; }
+.intro, small { color: #b9bdca; }
+.intro { margin-bottom: 0; }
+section + section { border-top: 1px solid rgba(255,255,255,.1); }
+.setting-row, .select-row { align-items: center; display: flex; gap: 20px; justify-content: space-between; min-height: 58px; }
+.setting-row + .setting-row, .select-row + .select-row { border-top: 1px solid rgba(255,255,255,.07); }
+strong, small { display: block; }
+small { font-size: 12px; margin-top: 3px; }
+input[type="checkbox"] { accent-color: #ff8b2b; height: 19px; width: 19px; }
+select { background: #17181f; border: 1px solid rgba(255,255,255,.24); border-radius: 6px; color: #f4f5fa; min-width: 180px; padding: 8px 10px; }
+footer { align-items: center; background: #1d1f28; display: flex; gap: 16px; justify-content: flex-end; }
+button { border: 0; border-radius: 6px; cursor: pointer; font-weight: 700; padding: 9px 14px; }
+.secondary { background: rgba(255,255,255,.1); color: #f4f5fa; }
+#save-status { color: #9fe1ae; font-size: 13px; min-width: 150px; text-align: right; }
+
+@media (max-width: 560px) {
+  header, section, footer { padding: 20px; }
+  .setting-row, .select-row { align-items: flex-start; }
+  select { min-width: 140px; }
+}

@@ -1,0 +1,18 @@
+.cache/
+.agents/
+.codex/
+.git/
+tmp/
+docs/superpowers/
+Kirene_Groupe6_refonte_graphique/
+*.pptx
+*.pptx.inspect.ndjson
+~$*
+
+# Local browser/package artifacts
+dist/
+build/
+node_modules/
+*.zip
+*.crx
+*.xpi

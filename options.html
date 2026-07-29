@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nexus Mods Media Preview — Settings</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main class="settings-card">
+      <header>
+        <p class="eyebrow">Nexus Mods Media Preview</p>
+        <h1>Settings</h1>
+        <p class="intro">Customize the content and behavior of the preview window.</p>
+      </header>
+
+      <form id="settings-form">
+        <section>
+          <h2>Displayed content</h2>
+          <label class="setting-row"><span><strong>Description</strong><small>Show the mod summary.</small></span><input type="checkbox" name="showDescription"></label>
+          <label class="setting-row"><span><strong>Author</strong><small>Show the author link.</small></span><input type="checkbox" name="showAuthor"></label>
+          <label class="setting-row"><span><strong>Requirements</strong><small>Show required mods.</small></span><input type="checkbox" name="showRequirements"></label>
+          <label class="setting-row"><span><strong>YouTube videos</strong><small>Show embedded YouTube videos.</small></span><input type="checkbox" name="showYoutube"></label>
+          <label class="setting-row"><span><strong>Nexus video media</strong><small>Show video links provided by Nexus.</small></span><input type="checkbox" name="showNexusVideos"></label>
+        </section>
+
+        <section>
+          <h2>Interface</h2>
+          <label class="setting-row"><span><strong>Action buttons</strong><small>Copy, download, and open the image.</small></span><input type="checkbox" name="showActionButtons"></label>
+          <label class="setting-row"><span><strong>Keyboard shortcuts</strong><small>Navigate, zoom, and close with the keyboard.</small></span><input type="checkbox" name="keyboardShortcuts"></label>
+          <label class="select-row"><span><strong>Opening mode</strong><small>Choose what happens when a card is clicked.</small></span><select name="openMode"><option value="modal">Embedded window</option><option value="new-tab">New tab</option><option value="same-tab">Current tab</option></select></label>
+          <label class="select-row"><span><strong>Preview width</strong><small>Adjust the gallery width.</small></span><select name="modalWidth"><option value="compact">Compact</option><option value="normal">Normal</option><option value="wide">Wide</option></select></label>
+        </section>
+
+        <footer>
+          <button type="button" id="reset-settings" class="secondary">Reset to defaults</button>
+          <span id="save-status" role="status" aria-live="polite"></span>
+        </footer>
+      </form>
+    </main>
+    <script src="src/settings.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

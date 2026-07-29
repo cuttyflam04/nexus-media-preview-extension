@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Nexus Mods Media Preview",
+  "version": "1.13.13",
+  "description": "Adds a quick media preview button to Nexus Mods listing cards.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.nexusmods.com/*"
+      ],
+      "js": [
+        "src/settings.js",
+        "src/info-cards.js",
+        "src/media-lifecycle.js",
+        "src/requirements.js",
+        "src/content.js"
+      ],
+      "css": [
+        "src/styles.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "permissions": [
+    "clipboardWrite",
+    "downloads",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.nexusmods.com/*",
+    "https://staticdelivery.nexusmods.com/*"
+  ]
+}
