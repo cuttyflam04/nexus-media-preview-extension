@@ -1,0 +1,30 @@
+name: Verify extension
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          node --check src/content.js
+          node --check src/info-cards.js
+          node --check src/media-lifecycle.js
+          node --check src/requirements.js
+          node --check src/settings.js
+          node --check options.js
+      - name: Run regression tests
+        run: node --test tests/*.test.js
