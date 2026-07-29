@@ -27,6 +27,12 @@ The extension does not create download or endorsement data. Endorsement controls
 
 Open **Details → Extension options** to configure the displayed metadata and videos, action buttons, opening mode, keyboard shortcuts, and preview width. Changes are saved automatically.
 
+## Browser support
+
+- Chrome, Brave, and Edge use the Manifest V3 service worker.
+- Firefox uses the same background file through the Manifest V3 `scripts` fallback. Firefox 121 or newer is recommended.
+- The extension must be packaged and signed separately for each browser store.
+
 ## Usage
 
 - Select the camera button on a mod/media card, or hover/focus a standalone mod/media link and select the floating **Media** button.

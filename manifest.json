@@ -28,7 +28,10 @@
     }
   ],
   "background": {
-    "service_worker": "src/background.js"
+    "service_worker": "src/background.js",
+    "scripts": [
+      "src/background.js"
+    ]
   },
   "options_ui": {
     "page": "options.html",
