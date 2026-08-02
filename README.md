@@ -55,6 +55,10 @@ Use GitHub Issues to report bugs, request features, or send broader feedback and
 
 If the extension is useful, optional development support is available at [Ko-fi](https://ko-fi.com/cuttyflam04). It does not affect issue handling or feature prioritization.
 
+### Roadmap announcement
+
+The next project focus will be **Nexus media support**. The first release concentrated on mod previews; the next phase will improve how standalone images, videos, notification media, profile media, and related media links are discovered, previewed, and navigated.
+
 ### Browser support
 
 - Chrome, Brave, and Edge use the Manifest V3 service worker.
