@@ -795,30 +795,7 @@
   }
 
   async function loadCanonicalModMeta(mod) {
-    let primary = null;
-    try {
-      primary = parseCanonicalModMeta(await fetchPageHtml(mod.url), mod.url);
-    } catch {
-      primary = null;
-    }
-
-    // Most Nexus pages expose the summary on the canonical URL. Only make
-    // the extra Description-tab request for layouts that genuinely lack it;
-    // this avoids adding a second full-page request to every preview.
-    if (primary?.summary) return primary;
-
-    let fallback = null;
-    try {
-      fallback = parseCanonicalModMeta(
-        await fetchPageHtml(`${mod.url}?tab=description`),
-        mod.url
-      );
-    } catch {
-      fallback = null;
-    }
-
-    if (!primary && !fallback) throw new Error("The mod page could not be loaded.");
-    return mergeCanonicalModMeta(primary, fallback);
+    return parseCanonicalModMeta(await fetchPageHtml(mod.url), mod.url);
   }
 
   function parseCanonicalModMeta(html, fallbackUrl) {
@@ -840,20 +817,6 @@
     };
   }
 
-  function mergeCanonicalModMeta(primary, fallback) {
-    const sources = [primary, fallback].filter(Boolean);
-    const requirements = sources
-      .flatMap((meta) => meta.requirements || [])
-      .filter((requirement, index, all) => requirement?.url && all.findIndex((item) => item.url === requirement.url) === index);
-    return {
-      title: sources.find((meta) => meta.title)?.title || "",
-      summary: sources.find((meta) => meta.summary)?.summary || null,
-      downloadInfo: sources.find((meta) => meta.downloadInfo)?.downloadInfo || null,
-      requirements: requirements.length ? requirements : null,
-      author: sources.find((meta) => meta.author)?.author || null,
-      totalDownloads: sources.find((meta) => meta.totalDownloads)?.totalDownloads || null
-    };
-  }
 
   function fetchPageHtml(url) {
     if (pageHtmlCache.has(url)) return pageHtmlCache.get(url);
