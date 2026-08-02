@@ -53,20 +53,31 @@
     return summary;
   }
 
-  function findDescriptionRoot(doc) {
-    if (!doc?.querySelector) return null;
-    const exact = doc.querySelector(".mod_description_container");
+  function findAboutHeading(doc) {
+    const exact = doc.querySelector("#description_tab_h2");
     if (exact) return exact;
-    return [...doc.querySelectorAll("[class*='mod_description_container']")]
-      .find((element) => cleanDescription(element.textContent).length > 0) || null;
+    return [...doc.querySelectorAll("h2,h3")]
+      .find((heading) => /^about\s+this\s+mod$/i.test(cleanDescription(heading.textContent)));
+  }
+
+  function findSummaryElement(doc) {
+    const heading = findAboutHeading(doc);
+    const container = heading?.parentElement;
+    if (!container?.children) return null;
+
+    const children = [...container.children];
+    const headingIndex = children.indexOf(heading);
+    const summary = children
+      .slice(headingIndex + 1)
+      .find((element) => element.tagName === "P" && cleanDescription(collectText(element)));
+    return summary || null;
   }
 
   function extract(doc, title = "") {
     if (!doc?.querySelectorAll) return null;
 
-    const root = findDescriptionRoot(doc);
-    const fullDescription = cleanDescription(root ? collectText(root) : "");
-    if (fullDescription && fullDescription !== title) return fullDescription;
+    const summary = cleanDescription(collectText(findSummaryElement(doc)));
+    if (summary && summary !== title) return summary;
     return extractSeoSummary(doc, title);
   }
 

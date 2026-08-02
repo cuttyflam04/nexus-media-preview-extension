@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nexus Mods Media Preview",
-  "version": "1.13.15",
+  "version": "1.13.16",
   "description": "Adds a quick media preview button to Nexus Mods listing cards.",
   "icons": {
     "16": "icons/icon-16.png",

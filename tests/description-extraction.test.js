@@ -23,34 +23,34 @@ function element(tagName, children = [], className = "") {
   };
 }
 
-function documentWith({ root = null, scripts = [], meta = null } = {}) {
+function documentWith({ summary = null, scripts = [], meta = null } = {}) {
+  const heading = summary ? element("H2", [text("About this mod")]) : null;
+  const container = summary ? { children: [heading, summary], querySelectorAll: () => [] } : null;
+  if (heading) heading.parentElement = container;
+  if (summary) summary.parentElement = container;
   return {
     querySelector(selector) {
-      if (selector === ".mod_description_container") return root;
+      if (selector === "#description_tab_h2") return heading;
       if (selector === "meta[property='og:description']" || selector === "meta[name='description']") return meta;
       return null;
     },
     querySelectorAll(selector) {
-      if (selector === "[class*='mod_description_container']") return root ? [root] : [];
+      if (selector === "h2,h3") return heading ? [heading] : [];
       if (selector === "script[type='application/ld+json']") return scripts;
       return [];
     }
   };
 }
 
-test("extracts the full Nexus description container instead of the SEO summary", () => {
+test("extracts only the short summary under About this mod", () => {
   const api = loadDescription();
-  const root = element("DIV", [
-    element("DIV", [text("First paragraph.")]),
-    element("DIV", [text("Second paragraph."), element("BR"), text("Still complete.")]),
-    element("SCRIPT", [text("must be ignored")])
-  ], "container mod_description_container condensed");
+  const summary = element("P", [text("Short summary only.")]);
   const document = documentWith({
-    root,
-    scripts: [{ textContent: JSON.stringify({ description: "Short SEO excerpt" }) }]
+    summary,
+    scripts: [{ textContent: JSON.stringify({ description: "SEO excerpt" }) }]
   });
 
-  assert.equal(api.extract(document, "Example mod"), "First paragraph.\n\nSecond paragraph.\nStill complete.");
+  assert.equal(api.extract(document, "Example mod"), "Short summary only.");
 });
 
 test("falls back to the SEO description when Nexus has no full description container", () => {
