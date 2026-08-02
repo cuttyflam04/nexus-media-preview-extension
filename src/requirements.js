@@ -1,4 +1,11 @@
 (() => {
+  const IGNORED_NAMES = new Set([
+    "description", "english", "german", "french", "italian", "spanish", "polish",
+    "russian", "ukrainian", "mandarin", "turkish", "portuguese", "brazilian portuguese",
+    "chinese", "simplified chinese", "traditional chinese", "japanese", "korean", "dutch",
+    "czech", "hungarian", "arabic"
+  ]);
+
   function anchorHref(anchor) {
     return anchor?.getAttribute?.("href") || anchor?.href || anchor?.getAttribute?.("data-href") || anchor?.getAttribute?.("data-url") || "";
   }
@@ -12,6 +19,11 @@
     } catch {
       return !/[?&]tab=(?!files(?:&|$))[^&#]*/i.test(href);
     }
+  }
+
+  function isUsableRequirementName(value) {
+    const name = String(value || "").trim().replace(/\s+/g, " ");
+    return Boolean(name) && !IGNORED_NAMES.has(name.toLowerCase());
   }
 
   function extract(doc, normalizeModUrl) {
@@ -39,12 +51,14 @@
         if (/^(BODY|HTML|NAV|HEADER|MAIN)$/i.test(current.tagName || "")) break;
       }
       if (!isRequirement) continue;
+      const name = anchor.textContent.trim() || "";
+      if (!isUsableRequirementName(name)) continue;
 
       const modUrl = normalizeModUrl(anchorHref(anchor));
       if (!modUrl || seen.has(modUrl.url)) continue;
       seen.add(modUrl.url);
       matches.push({
-        name: anchor.textContent.trim() || `Mod ${modUrl.modId}`,
+        name: name || `Mod ${modUrl.modId}`,
         url: modUrl.url
       });
     }
@@ -58,11 +72,13 @@
     for (const root of roots) {
       for (const anchor of root.querySelectorAll("a[href*='/mods/']")) {
         if (!isRequirementLink(anchor)) continue;
+        const name = anchor.textContent.trim() || "";
+        if (!isUsableRequirementName(name)) continue;
         const modUrl = normalizeModUrl(anchorHref(anchor));
         if (!modUrl || seen.has(modUrl.url)) continue;
         seen.add(modUrl.url);
         matches.push({
-          name: anchor.textContent.trim() || `Mod ${modUrl.modId}`,
+          name: name || `Mod ${modUrl.modId}`,
           url: modUrl.url
         });
       }
@@ -81,11 +97,13 @@
         if (!links.length) continue;
         for (const anchor of links) {
           if (!isRequirementLink(anchor)) continue;
+          const name = anchor.textContent.trim() || "";
+          if (!isUsableRequirementName(name)) continue;
           const modUrl = normalizeModUrl(anchorHref(anchor));
           if (!modUrl || seen.has(modUrl.url)) continue;
           seen.add(modUrl.url);
           matches.push({
-            name: anchor.textContent.trim() || `Mod ${modUrl.modId}`,
+            name: name || `Mod ${modUrl.modId}`,
             url: modUrl.url
           });
         }

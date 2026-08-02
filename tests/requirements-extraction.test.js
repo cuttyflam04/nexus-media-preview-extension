@@ -132,6 +132,34 @@ test("does not treat a broad page wrapper mentioning requirements as a requireme
   assert.equal(broadWrapper.textContent.includes("Requirements"), true);
 });
 
+test("filters language and Description links from a Files-tab requirements block", () => {
+  const api = loadRequirements();
+  const dependency = node({
+    tagName: "A",
+    textContent: "Address Library for SKSE Plugins",
+    href: "/skyrimspecialedition/mods/32444?tab=files"
+  });
+  const german = node({ tagName: "A", textContent: "German", href: "/skyrimspecialedition/mods/70001?tab=files" });
+  const ukrainian = node({ tagName: "A", textContent: "Ukrainian", href: "/skyrimspecialedition/mods/70002?tab=files" });
+  const description = node({ tagName: "A", textContent: "Description", href: "/skyrimspecialedition/mods/186468?tab=files" });
+  const section = node({ id: "mod-file-requirements", children: [dependency, german, ukrainian, description] });
+  const document = {
+    querySelectorAll(selector) {
+      if (selector === "a[href*='/mods/']") return [dependency, german, ukrainian, description];
+      if (selector.includes("requirements")) return [section];
+      return [];
+    }
+  };
+  const normalize = (href) => {
+    const match = href.match(/mods\/(\d+)/);
+    return match ? { modId: match[1], url: `https://www.nexusmods.com/skyrimspecialedition/mods/${match[1]}` } : null;
+  };
+
+  assert.deepEqual(JSON.parse(JSON.stringify(api.extract(document, normalize))), [
+    { name: "Address Library for SKSE Plugins", url: "https://www.nexusmods.com/skyrimspecialedition/mods/32444" }
+  ]);
+});
+
 test("finds dependencies under a Nexus requirements heading when the wrapper has no semantic class", () => {
   const api = loadRequirements();
   const dependency = node({

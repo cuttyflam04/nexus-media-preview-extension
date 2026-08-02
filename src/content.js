@@ -787,24 +787,38 @@
   async function getCanonicalModMeta(mod) {
     if (modMetaCache.has(mod.url)) return modMetaCache.get(mod.url);
 
-    const promise = fetchPageHtml(mod.url)
-      .then((html) => {
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        const rawTitle =
-          doc.querySelector("meta[property='og:title']")?.content ||
-          doc.querySelector("h1")?.textContent ||
-          doc.title;
-        const title = cleanTitle(rawTitle);
-        if (!title) throw new Error("The mod title was not found.");
-        return {
-          title,
-          summary: descriptionApi.extract(doc, title),
-          downloadInfo: readStrictDownloadHistory(doc),
-          requirements: extractModRequirements(doc),
-          author: extractModAuthor(doc),
-          totalDownloads: extractTotalDownloads(doc)
-        };
-      });
+    const promise = Promise.allSettled([
+      fetchPageHtml(mod.url),
+      fetchPageHtml(`${mod.url}?tab=description`)
+    ]).then((results) => {
+      const documents = results
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => new DOMParser().parseFromString(result.value, "text/html"));
+      if (!documents.length) throw new Error("The mod page could not be loaded.");
+
+      const titles = documents.map((doc) => cleanTitle(
+        doc.querySelector("meta[property='og:title']")?.content ||
+        doc.querySelector("h1")?.textContent ||
+        doc.title
+      )).filter(Boolean);
+      const title = titles[0] || cleanTitle(mod.url);
+      if (!title) throw new Error("The mod title was not found.");
+
+      const firstValue = (read) => documents.map((doc) => readMetadataField(() => read(doc))).find(Boolean) || null;
+      const requirements = documents
+        .map((doc) => readMetadataField(() => extractModRequirements(doc)) || [])
+        .flat()
+        .filter((requirement, index, all) => requirement?.url && all.findIndex((item) => item.url === requirement.url) === index);
+
+      return {
+        title,
+        summary: firstValue((doc) => descriptionApi.extract(doc, title)),
+        downloadInfo: firstValue((doc) => readStrictDownloadHistory(doc)),
+        requirements: requirements.length ? requirements : null,
+        author: firstValue((doc) => extractModAuthor(doc)),
+        totalDownloads: firstValue((doc) => extractTotalDownloads(doc))
+      };
+    });
 
     modMetaCache.set(mod.url, promise);
     promise.catch(() => modMetaCache.delete(mod.url));
@@ -822,6 +836,14 @@
     pageHtmlCache.set(url, promise);
     promise.catch(() => pageHtmlCache.delete(url));
     return promise;
+  }
+
+  function readMetadataField(read) {
+    try {
+      return read();
+    } catch {
+      return null;
+    }
   }
 
   function extractModAuthor(doc) {

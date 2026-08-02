@@ -49,6 +49,10 @@ Open **Details → Extension options** to configure the displayed metadata and v
 - The extension only treats an exact Nexus download-history sentence as proof of a previous download.
 - If Nexus changes its page markup, some media or metadata may become unavailable without affecting normal site navigation.
 
+## Version 1.13.15
+
+- Loads metadata from both the canonical mod page and its Description tab, so Description and Requirements remain available when a preview starts from a Files-tab link.
+
 ## Version 1.13.14
 
 - Extracts the complete Nexus description container instead of the truncated SEO summary, with a metadata fallback for older layouts.
