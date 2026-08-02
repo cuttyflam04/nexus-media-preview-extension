@@ -49,6 +49,10 @@ Open **Details → Extension options** to configure the displayed metadata and v
 - The extension only treats an exact Nexus download-history sentence as proof of a previous download.
 - If Nexus changes its page markup, some media or metadata may become unavailable without affecting normal site navigation.
 
+## Version 1.13.17
+
+- Avoids a second full Nexus page request for normal previews; the Description-tab fallback now runs only when the canonical page has no usable summary.
+
 ## Version 1.13.16
 
 - Extracts only Nexus's short Description paragraph under “About this mod”; the long author-provided page content is no longer inserted into the preview card.

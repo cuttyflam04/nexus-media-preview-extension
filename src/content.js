@@ -787,42 +787,72 @@
   async function getCanonicalModMeta(mod) {
     if (modMetaCache.has(mod.url)) return modMetaCache.get(mod.url);
 
-    const promise = Promise.allSettled([
-      fetchPageHtml(mod.url),
-      fetchPageHtml(`${mod.url}?tab=description`)
-    ]).then((results) => {
-      const documents = results
-        .filter((result) => result.status === "fulfilled")
-        .map((result) => new DOMParser().parseFromString(result.value, "text/html"));
-      if (!documents.length) throw new Error("The mod page could not be loaded.");
-
-      const titles = documents.map((doc) => cleanTitle(
-        doc.querySelector("meta[property='og:title']")?.content ||
-        doc.querySelector("h1")?.textContent ||
-        doc.title
-      )).filter(Boolean);
-      const title = titles[0] || cleanTitle(mod.url);
-      if (!title) throw new Error("The mod title was not found.");
-
-      const firstValue = (read) => documents.map((doc) => readMetadataField(() => read(doc))).find(Boolean) || null;
-      const requirements = documents
-        .map((doc) => readMetadataField(() => extractModRequirements(doc)) || [])
-        .flat()
-        .filter((requirement, index, all) => requirement?.url && all.findIndex((item) => item.url === requirement.url) === index);
-
-      return {
-        title,
-        summary: firstValue((doc) => descriptionApi.extract(doc, title)),
-        downloadInfo: firstValue((doc) => readStrictDownloadHistory(doc)),
-        requirements: requirements.length ? requirements : null,
-        author: firstValue((doc) => extractModAuthor(doc)),
-        totalDownloads: firstValue((doc) => extractTotalDownloads(doc))
-      };
-    });
+    const promise = loadCanonicalModMeta(mod);
 
     modMetaCache.set(mod.url, promise);
     promise.catch(() => modMetaCache.delete(mod.url));
     return promise;
+  }
+
+  async function loadCanonicalModMeta(mod) {
+    let primary = null;
+    try {
+      primary = parseCanonicalModMeta(await fetchPageHtml(mod.url), mod.url);
+    } catch {
+      primary = null;
+    }
+
+    // Most Nexus pages expose the summary on the canonical URL. Only make
+    // the extra Description-tab request for layouts that genuinely lack it;
+    // this avoids adding a second full-page request to every preview.
+    if (primary?.summary) return primary;
+
+    let fallback = null;
+    try {
+      fallback = parseCanonicalModMeta(
+        await fetchPageHtml(`${mod.url}?tab=description`),
+        mod.url
+      );
+    } catch {
+      fallback = null;
+    }
+
+    if (!primary && !fallback) throw new Error("The mod page could not be loaded.");
+    return mergeCanonicalModMeta(primary, fallback);
+  }
+
+  function parseCanonicalModMeta(html, fallbackUrl) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const title = cleanTitle(
+      doc.querySelector("meta[property='og:title']")?.content ||
+      doc.querySelector("h1")?.textContent ||
+      doc.title
+    ) || cleanTitle(fallbackUrl);
+    if (!title) throw new Error("The mod title was not found.");
+
+    return {
+      title,
+      summary: readMetadataField(() => descriptionApi.extract(doc, title)),
+      downloadInfo: readMetadataField(() => readStrictDownloadHistory(doc)),
+      requirements: readMetadataField(() => extractModRequirements(doc)),
+      author: readMetadataField(() => extractModAuthor(doc)),
+      totalDownloads: readMetadataField(() => extractTotalDownloads(doc))
+    };
+  }
+
+  function mergeCanonicalModMeta(primary, fallback) {
+    const sources = [primary, fallback].filter(Boolean);
+    const requirements = sources
+      .flatMap((meta) => meta.requirements || [])
+      .filter((requirement, index, all) => requirement?.url && all.findIndex((item) => item.url === requirement.url) === index);
+    return {
+      title: sources.find((meta) => meta.title)?.title || "",
+      summary: sources.find((meta) => meta.summary)?.summary || null,
+      downloadInfo: sources.find((meta) => meta.downloadInfo)?.downloadInfo || null,
+      requirements: requirements.length ? requirements : null,
+      author: sources.find((meta) => meta.author)?.author || null,
+      totalDownloads: sources.find((meta) => meta.totalDownloads)?.totalDownloads || null
+    };
   }
 
   function fetchPageHtml(url) {
