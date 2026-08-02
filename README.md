@@ -45,6 +45,16 @@ Official Chrome Web Store and Firefox Add-ons publication is currently delayed b
 
 The latest clean browser packages can be generated locally with `scripts/package-distributions.ps1`, or downloaded from the GitHub Actions artifact produced by the **Build browser packages** workflow.
 
+### Feedback and support
+
+Use GitHub Issues to report bugs, request features, or send broader feedback and complaints:
+
+- [Report a bug](https://github.com/cuttyflam04/nexus-media-preview-extension/issues/new?template=bug_report.yml)
+- [Request a feature](https://github.com/cuttyflam04/nexus-media-preview-extension/issues/new?template=feature_request.yml)
+- [Send feedback or a complaint](https://github.com/cuttyflam04/nexus-media-preview-extension/issues/new?template=feedback.yml)
+
+If the extension is useful, optional development support is available at [Ko-fi](https://ko-fi.com/cuttyflam04). It does not affect issue handling or feature prioritization.
+
 ### Browser support
 
 - Chrome, Brave, and Edge use the Manifest V3 service worker.

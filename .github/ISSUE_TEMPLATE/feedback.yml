@@ -1,0 +1,18 @@
+name: Feedback or complaint
+description: Share broader feedback, a complaint, or an experience that does not fit a bug report.
+title: "[Feedback]: "
+labels:
+  - feedback
+body:
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Feedback
+      description: Be specific about what happened and what outcome would be better.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Include browser, extension version, or relevant pages when applicable.

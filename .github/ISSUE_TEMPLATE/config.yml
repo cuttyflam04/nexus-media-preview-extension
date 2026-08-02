@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Read the installation and support guide
+    url: https://github.com/cuttyflam04/nexus-media-preview-extension#installation
+    about: Check manual installation, browser support, and current store status first.
+  - name: Support development on Ko-fi
+    url: https://ko-fi.com/cuttyflam04
+    about: Optional support for the project; bug reports and feature requests remain free.

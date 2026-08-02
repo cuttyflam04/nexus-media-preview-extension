@@ -3,7 +3,14 @@
   const form = document.querySelector("#settings-form");
   const status = document.querySelector("#save-status");
   const resetButton = document.querySelector("#reset-settings");
+  const kofiLink = document.querySelector("[data-kofi-link]");
   if (!api || !form) return;
+
+  const KO_FI_URL = "https://ko-fi.com/cuttyflam04";
+  if (kofiLink) {
+    kofiLink.href = KO_FI_URL;
+    kofiLink.hidden = false;
+  }
 
   const keys = Object.keys(api.defaults);
 
