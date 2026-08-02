@@ -24,6 +24,7 @@ jobs:
           node --check src/info-cards.js
           node --check src/media-lifecycle.js
           node --check src/requirements.js
+          node --check src/description.js
           node --check src/settings.js
           node --check options.js
       - name: Run regression tests

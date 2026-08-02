@@ -41,6 +41,9 @@
   const requirementsApi = globalThis.NexusMediaPreviewRequirements || {
     extract() { return null; }
   };
+  const descriptionApi = globalThis.NexusMediaPreviewDescription || {
+    extract() { return null; }
+  };
   let userSettings = settingsApi.sanitize(settingsApi.defaults);
   const settingsReady = settingsApi.load().then((value) => {
     userSettings = settingsApi.sanitize(value);
@@ -795,7 +798,7 @@
         if (!title) throw new Error("The mod title was not found.");
         return {
           title,
-          summary: extractModSummary(doc, title),
+          summary: descriptionApi.extract(doc, title),
           downloadInfo: readStrictDownloadHistory(doc),
           requirements: extractModRequirements(doc),
           author: extractModAuthor(doc),
@@ -819,32 +822,6 @@
     pageHtmlCache.set(url, promise);
     promise.catch(() => pageHtmlCache.delete(url));
     return promise;
-  }
-
-  function extractModSummary(doc, title) {
-    const jsonDescription = [...doc.querySelectorAll("script[type='application/ld+json']")]
-      .map((script) => {
-        try {
-          const data = JSON.parse(script.textContent);
-          return Array.isArray(data) ? data.find((item) => item?.description)?.description : data?.description;
-        } catch {
-          return null;
-        }
-      })
-      .find(Boolean);
-    const raw =
-      jsonDescription ||
-      doc.querySelector("meta[property='og:description']")?.content ||
-      doc.querySelector("meta[name='description']")?.content ||
-      "";
-    const summary = String(raw)
-      .replace(/\s+at\s+.+?\s+Nexus\s+-\s+Mods.*$/i, "")
-      .replace(/\s+-\s+Nexus Mods.*$/i, "")
-      .trim()
-      .replace(/\s+/g, " ");
-
-    if (!summary || summary === title || /Nexus Mods is a site/i.test(summary)) return null;
-    return summary;
   }
 
   function extractModAuthor(doc) {
