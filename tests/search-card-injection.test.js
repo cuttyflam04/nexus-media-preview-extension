@@ -119,7 +119,7 @@ class FakeElement {
   }
 }
 
-function loadContentScript({ image, card, modAnchors = [], searchInputs = [] }) {
+function loadContentScript({ image, card, modAnchors = [], mediaAnchors = [], searchInputs = [] }) {
   const documentElement = new FakeElement("html");
   const body = new FakeElement("body");
   let mutationCallback = null;
@@ -130,6 +130,7 @@ function loadContentScript({ image, card, modAnchors = [], searchInputs = [] }) 
     querySelectorAll(selector) {
       if (selector === "img") return [image];
       if (selector === "a[href*='/mods/']") return modAnchors;
+      if (selector === "a[href]") return [...modAnchors, ...mediaAnchors];
       if (selector === "input, [role='searchbox']") return searchInputs;
       return [];
     },
@@ -168,6 +169,7 @@ function loadContentScript({ image, card, modAnchors = [], searchInputs = [] }) 
     clearTimeout,
     requestAnimationFrame: window.requestAnimationFrame
   };
+  vm.runInNewContext(fs.readFileSync("src/notification-media.js", "utf8"), context);
   vm.runInNewContext(fs.readFileSync("src/content.js", "utf8"), context);
   return {
     document,
@@ -325,4 +327,62 @@ test("removes a stale camera button when a card is later recognized as a non-sea
 
   assert.equal(notification.querySelector(".nmp-search-preview-button"), null);
   assert.equal(notification.classList.contains("nmp-search-card-host"), false);
+});
+
+test("keeps the floating Media control off grouped notification posts", () => {
+  const image = new FakeElement("img");
+  const panel = new FakeElement("section");
+  panel.textContent = "Notifications";
+  const grouped = new FakeElement("article");
+  grouped.className = "activity-entry";
+  grouped.textContent = "Azurarimjobber published 2 images";
+  grouped.parentElement = panel;
+  const mediaAnchor = new FakeElement("a");
+  mediaAnchor.href = "https://www.nexusmods.com/profile/Azurarimjobber/media?gameId=1704";
+  mediaAnchor.parentElement = grouped;
+
+  loadContentScript({ image, card: grouped, mediaAnchors: [mediaAnchor] });
+
+  assert.equal(mediaAnchor.classList.contains("nmp-inline-link"), false);
+  assert.equal(mediaAnchor.hasAttribute("data-nmp-media-link-processed"), false);
+});
+
+test("adds a card button to a grouped notification thumbnail", () => {
+  const image = new FakeElement("img", { width: 180, height: 120 });
+  const panel = new FakeElement("section");
+  panel.textContent = "Notifications";
+  const grouped = new FakeElement("article");
+  grouped.className = "activity-entry";
+  grouped.textContent = "Azurarimjobber published 2 images";
+  grouped.parentElement = panel;
+  grouped.modImage = image;
+  image.parentElement = grouped;
+  const mediaAnchor = new FakeElement("a");
+  mediaAnchor.href = "https://www.nexusmods.com/profile/Azurarimjobber/media?gameId=1704";
+  mediaAnchor.parentElement = grouped;
+
+  loadContentScript({ image, card: grouped, mediaAnchors: [mediaAnchor] });
+
+  const cardButton = grouped.querySelector(".nmp-notification-media-button");
+  assert.ok(cardButton);
+  assert.equal(cardButton.nmpNotificationMedia.count, 2);
+  assert.equal(mediaAnchor.classList.contains("nmp-inline-link"), false);
+});
+
+test("keeps the floating Media control for a single notification post", () => {
+  const image = new FakeElement("img");
+  const panel = new FakeElement("section");
+  panel.textContent = "Notifications";
+  const unique = new FakeElement("article");
+  unique.className = "activity-entry";
+  unique.textContent = "Azurarimjobber published an image";
+  unique.parentElement = panel;
+  const mediaAnchor = new FakeElement("a");
+  mediaAnchor.href = "https://www.nexusmods.com/images/123456";
+  mediaAnchor.parentElement = unique;
+
+  loadContentScript({ image, card: unique, mediaAnchors: [mediaAnchor] });
+
+  assert.equal(mediaAnchor.classList.contains("nmp-inline-link"), true);
+  assert.equal(mediaAnchor.getAttribute("data-nmp-media-link-processed"), mediaAnchor.href);
 });

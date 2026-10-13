@@ -4,8 +4,11 @@
   const INLINE_PROCESSED_ATTR = "data-nmp-inline-processed";
   const MEDIA_LINK_PROCESSED_ATTR = "data-nmp-media-link-processed";
   const PROFILE_MEDIA_PROCESSED_ATTR = "data-nmp-profile-media-processed";
+  const NOTIFICATION_MEDIA_PROCESSED_ATTR = "data-nmp-notification-media-processed";
   const IMAGE_SCAN_LISTENER_ATTR = "data-nmp-image-scan-listener";
   const MOD_URL_RE = /^https:\/\/www\.nexusmods\.com\/([^\/?#]+)\/mods\/(\d+)/i;
+  const CONFRERIE_HOST_RE = /^(?:www\.)?confrerie-des-traducteurs\.fr$/i;
+  const CONFRERIE_IMAGE_HOST_RE = /^(?:mods\.)?confrerie-des-traducteurs\.fr$/i;
   const fallbackSettings = {
     defaults: {
       showDescription: true,
@@ -43,6 +46,13 @@
   };
   const descriptionApi = globalThis.NexusMediaPreviewDescription || {
     extract() { return null; }
+  };
+  const modalDragApi = globalThis.NexusMediaPreviewModalDrag || {
+    attach() { return () => {}; },
+    reset() {}
+  };
+  const notificationMediaApi = globalThis.NexusMediaPreviewNotificationMedia || {
+    isGroupedMediaNotification() { return false; }
   };
   let userSettings = settingsApi.sanitize(settingsApi.defaults);
   const settingsReady = settingsApi.load().then((value) => {
@@ -134,6 +144,243 @@
     }
   }
 
+  function isConfrerieSite() {
+    return CONFRERIE_HOST_RE.test(location.hostname);
+  }
+
+  function normalizeConfrerieModUrl(href) {
+    try {
+      const url = new URL(href, location.href);
+      if (!CONFRERIE_HOST_RE.test(url.hostname)) return null;
+      const match = url.pathname.match(/^\/skyrim\/mods\/(\d+)(?:\/[^/?#]+)?/i);
+      if (!match) return null;
+      return {
+        modId: match[1],
+        url: url.href.split("#")[0]
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function cleanConfrerieImageUrl(raw, baseUrl) {
+    const src = absoluteUrl(raw, baseUrl);
+    if (!src) return null;
+    try {
+      const url = new URL(src);
+      if (url.protocol !== "https:" || !CONFRERIE_IMAGE_HOST_RE.test(url.hostname)) return null;
+      if (!/\/images\//i.test(url.pathname) || !/\.(?:jpe?g|png|webp)$/i.test(url.pathname)) return null;
+      return `${url.origin}${url.pathname}`;
+    } catch {
+      return null;
+    }
+  }
+
+  function extractConfrerieMedia(doc, baseUrl) {
+    if (!doc?.querySelectorAll) return [];
+    const items = [];
+
+    for (const anchor of doc.querySelectorAll("a[href]")) {
+      const href = absoluteUrl(anchor.getAttribute("href"), baseUrl);
+      const image = anchor.querySelector("img");
+      const src = cleanConfrerieImageUrl(href, baseUrl) || cleanConfrerieImageUrl(
+        image?.getAttribute("data-full") || image?.getAttribute("data-original") || image?.currentSrc || image?.src,
+        baseUrl
+      );
+      if (src) {
+        items.push({
+          type: "image",
+          src,
+          alt: image?.getAttribute("alt") || anchor.textContent?.trim() || "Confrérie media",
+          pageUrl: baseUrl
+        });
+      }
+
+      const videoId = extractYouTubeId(href);
+      if (videoId) {
+        items.push({
+          type: "video",
+          src: getYouTubeEmbedUrl(videoId),
+          label: getVideoLabel(anchor),
+          pageUrl: `https://www.youtube.com/watch?v=${videoId}`,
+          videoId
+        });
+      }
+    }
+
+    for (const image of doc.querySelectorAll("img")) {
+      if (image.closest("a[href]")) continue;
+      const src = cleanConfrerieImageUrl(
+        image.getAttribute("data-full") || image.getAttribute("data-original") || image.currentSrc || image.src,
+        baseUrl
+      );
+      if (src) items.push({ type: "image", src, alt: image.alt || "Confrérie media", pageUrl: baseUrl });
+    }
+
+    for (const iframe of doc.querySelectorAll("iframe[src], iframe[data-src], iframe[data-lazy-src]")) {
+      const videoId = extractYouTubeId(iframe.getAttribute("src") || iframe.getAttribute("data-src") || iframe.getAttribute("data-lazy-src"));
+      if (videoId) {
+        items.push({
+          type: "video",
+          src: getYouTubeEmbedUrl(videoId),
+          label: getVideoLabel(iframe),
+          pageUrl: `https://www.youtube.com/watch?v=${videoId}`,
+          videoId
+        });
+      }
+    }
+
+    return dedupeMedia(items).slice(0, 60);
+  }
+
+  function getConfrerieContext(sourceElement) {
+    const mod = normalizeConfrerieModUrl(location.href) || normalizeConfrerieModUrl(sourceElement?.closest?.("a[href]")?.href);
+    const title = cleanTitle(document.querySelector("main h1, h1")?.textContent) || document.title.replace(/\s+[|–-].*$/, "").trim() || "Confrérie media";
+    return { mod, title, url: mod?.url || location.href };
+  }
+
+  function injectConfrerieButtons() {
+    injectConfrerieModLinkButtons();
+    for (const anchor of document.querySelectorAll("a[href]")) {
+      if (anchor.closest("header, nav, .nmp-modal, .nmp-lightbox")) continue;
+      const image = anchor.querySelector("img");
+      const imageUrl = cleanConfrerieImageUrl(anchor.getAttribute("href"), location.href) || cleanConfrerieImageUrl(
+        image?.getAttribute("data-full") || image?.getAttribute("data-original") || image?.currentSrc || image?.src,
+        location.href
+      );
+      if (!imageUrl || anchor.hasAttribute("data-nmp-confrerie-processed")) continue;
+
+      anchor.setAttribute("data-nmp-confrerie-processed", "true");
+      anchor.classList.add("nmp-preview-host");
+      const button = createPreviewButton("nmp-confrerie-preview-button");
+      button.title = "Preview Confrérie media";
+      button.setAttribute("aria-label", "Preview Confrérie media");
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const items = extractConfrerieMedia(document, location.href);
+        const images = items.filter((item) => item.type === "image");
+        const selected = images.findIndex((item) => item.src === imageUrl);
+        openConfiguredConfreriePreview(getConfrerieContext(anchor), items, selected);
+      });
+      anchor.append(button);
+    }
+  }
+
+  function injectConfrerieModLinkButtons() {
+    for (const anchor of document.querySelectorAll("a[href]")) {
+      if (anchor.closest("header, nav, .nmp-modal, .nmp-lightbox")) continue;
+      if (anchor.hasAttribute("data-nmp-confrerie-mod-processed")) continue;
+
+      const mod = normalizeConfrerieModUrl(anchor.href);
+      if (!mod || shouldIgnoreConfrerieInlineLink(anchor, mod)) continue;
+
+      anchor.setAttribute("data-nmp-confrerie-mod-processed", mod.url);
+      anchor.classList.add("nmp-inline-link");
+      anchor.addEventListener("mouseenter", (event) => showLinkPopover(anchor, { type: "confrerie", mod }, event));
+      anchor.addEventListener("focus", () => showLinkPopover(anchor, { type: "confrerie", mod }));
+      anchor.addEventListener("mouseleave", scheduleLinkPopoverHide);
+      anchor.addEventListener("blur", scheduleLinkPopoverHide);
+    }
+  }
+
+  function shouldIgnoreConfrerieInlineLink(anchor, mod) {
+    const currentMod = normalizeConfrerieModUrl(location.href);
+    if (currentMod?.url === mod.url) return true;
+    return Boolean(anchor.closest(
+      "nav, [role='navigation'], [role='tablist'], [role='tab'], [class*='tab-nav'], [class*='tabs-nav'], [class*='mod-tabs']"
+    ));
+  }
+
+  function openConfiguredConfreriePreview(context, media, startIndex) {
+    if (userSettings.openMode === "new-tab") {
+      window.open(context.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (userSettings.openMode === "same-tab") {
+      window.location.href = context.url;
+      return;
+    }
+    openConfreriePreview(context, media, startIndex);
+  }
+
+  async function openConfreriePreview(context, media, startIndex = 0) {
+    await settingsReady;
+    ensureModal();
+    resetModalPosition();
+    state.activeCard = null;
+    state.currentMod = null;
+    state.title.textContent = context.title;
+    state.title.href = context.url;
+    renderDownloadStatus(null);
+    renderModMetaCards(null);
+    renderDescription(null);
+    renderRequirements(null);
+    updateModNavigation();
+    state.body.innerHTML = `<div class="nmp-loading">Loading media...</div>`;
+    document.documentElement.classList.add("nmp-lock-scroll");
+    state.modal.hidden = false;
+
+    renderMedia(media, null, {
+      site: "confrerie",
+      mediaPageUrl: context.url,
+      startIndex: Math.max(0, startIndex)
+    });
+  }
+
+  function openConfiguredConfrerieLinkPreview(mod, title, sourceElement) {
+    if (userSettings.openMode === "new-tab") {
+      window.open(mod.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (userSettings.openMode === "same-tab") {
+      window.location.href = mod.url;
+      return;
+    }
+    openConfrerieLinkPreview(mod, title, sourceElement);
+  }
+
+  async function openConfrerieLinkPreview(mod, title, sourceElement) {
+    await settingsReady;
+    ensureModal();
+    resetModalPosition();
+    state.activeCard = sourceElement;
+    state.currentMod = null;
+    state.title.textContent = cleanTitle(title) || `Mod ${mod.modId}`;
+    state.title.href = mod.url;
+    renderDownloadStatus(null);
+    renderModMetaCards(null);
+    renderDescription(null);
+    renderRequirements(null);
+    updateModNavigation();
+    state.body.innerHTML = `<div class="nmp-loading">Loading media...</div>`;
+    document.documentElement.classList.add("nmp-lock-scroll");
+    state.modal.hidden = false;
+
+    try {
+      const response = await fetch(mod.url, { credentials: "include" });
+      if (!response.ok) throw new Error(`Confrérie page request failed: ${response.status}`);
+      const doc = new DOMParser().parseFromString(await response.text(), "text/html");
+      const context = {
+        title: cleanTitle(doc.querySelector("main h1, h1")?.textContent) || cleanTitle(title) || `Mod ${mod.modId}`,
+        url: mod.url
+      };
+      const media = extractConfrerieMedia(doc, mod.url);
+      if (state.title.href === mod.url) {
+        state.title.textContent = context.title;
+        renderMedia(media, null, { site: "confrerie", mediaPageUrl: mod.url });
+      }
+    } catch (error) {
+      state.body.innerHTML = `
+        <div class="nmp-empty">
+          <strong>Could not load Confrérie media.</strong>
+          <span>${escapeHtml(error.message || "The Confrérie page did not return readable media.")}</span>
+          <a href="${escapeHtml(mod.url)}" target="_self">Open on Confrérie</a>
+        </div>
+      `;
+    }
+  }
+
   function findCard(anchor) {
     const selectors = [
       "article",
@@ -212,7 +459,12 @@
   }
 
   function injectButtons() {
+    if (isConfrerieSite()) {
+      injectConfrerieButtons();
+      return;
+    }
     injectProfileMediaButtons();
+    injectNotificationMediaButtons();
     injectMediaLinkButtons();
     injectImageResultButtons();
     const anchors = [...document.querySelectorAll("a[href*='/mods/']")];
@@ -378,6 +630,14 @@
     const anchors = [...document.querySelectorAll("a[href]")];
     for (const anchor of anchors) {
       if (anchor.closest(".nmp-modal, .nmp-lightbox")) continue;
+
+      if (notificationMediaApi.isGroupedMediaNotification(anchor)) {
+        if (state.activeInlineLink === anchor) hideLinkPopover();
+        anchor.removeAttribute(MEDIA_LINK_PROCESSED_ATTR);
+        anchor.classList.remove("nmp-inline-link");
+        continue;
+      }
+
       if (anchor.hasAttribute(MEDIA_LINK_PROCESSED_ATTR)) continue;
 
       const media = normalizeMediaUrl(anchor.href);
@@ -389,6 +649,94 @@
       anchor.addEventListener("focus", () => showLinkPopover(anchor, { type: "media", media }));
       anchor.addEventListener("mouseleave", scheduleLinkPopoverHide);
       anchor.addEventListener("blur", scheduleLinkPopoverHide);
+    }
+  }
+
+  function injectNotificationMediaButtons() {
+    const getGroupedInfo = notificationMediaApi.getGroupedMediaInfo;
+    if (typeof getGroupedInfo !== "function") return;
+
+    const processedRows = new Set();
+    for (const anchor of document.querySelectorAll("a[href]")) {
+      if (anchor.closest(".nmp-modal, .nmp-lightbox")) continue;
+
+      const media = normalizeMediaUrl(anchor.href);
+      if (!media) continue;
+
+      const grouped = getGroupedInfo(anchor);
+      if (!grouped || processedRows.has(grouped.row)) continue;
+      processedRows.add(grouped.row);
+
+      const existing = grouped.row.querySelector?.(`.${BUTTON_CLASS}.nmp-notification-media-button`);
+      if (existing) continue;
+
+      const image = anchor.querySelector?.("img") || grouped.row.querySelector?.("img");
+      const target = image?.parentElement || anchor;
+      if (!target?.append) continue;
+
+      target.classList.add("nmp-preview-host");
+      grouped.row.setAttribute(NOTIFICATION_MEDIA_PROCESSED_ATTR, media.url);
+
+      const button = createPreviewButton("nmp-notification-media-button");
+      button.title = "Preview notification media";
+      button.setAttribute("aria-label", "Preview notification media");
+      button.nmpNotificationMedia = {
+        media,
+        count: grouped.count,
+        sourceElement: anchor
+      };
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openNotificationMediaPreview(
+          media,
+          getInlineTitle(grouped.row, "Nexus media"),
+          anchor,
+          grouped.count
+        );
+      });
+      target.append(button);
+    }
+  }
+
+  async function openNotificationMediaPreview(media, title, sourceElement, count) {
+    await settingsReady;
+    ensureModal();
+    resetModalPosition();
+    state.activeCard = sourceElement;
+    state.currentMod = null;
+    state.title.textContent = cleanTitle(title) || "Nexus media";
+    state.title.href = media.url;
+    renderDownloadStatus(null);
+    renderModMetaCards(null);
+    renderDescription(null);
+    renderRequirements(null);
+    updateModNavigation();
+    state.body.innerHTML = `<div class="nmp-loading">Loading media...</div>`;
+    document.documentElement.classList.add("nmp-lock-scroll");
+    state.modal.hidden = false;
+
+    try {
+      const loaded = await getLinkedMedia(media, sourceElement);
+      const images = loaded.filter((item) => item.type === "image");
+      const mediaItems = images.length > Number(count)
+        ? images.slice(0, Number(count))
+        : loaded;
+      if (state.title.href === media.url) {
+        renderMedia(mediaItems, null, {
+          mediaPage: true,
+          mediaPageUrl: media.url,
+          notificationMedia: true
+        });
+      }
+    } catch (error) {
+      state.body.innerHTML = `
+        <div class="nmp-empty">
+          <strong>Could not load notification media.</strong>
+          <span>${escapeHtml(error.message || "Nexus Mods did not return readable media.")}</span>
+          <a href="${escapeHtml(media.url)}" target="_self">Open on Nexus</a>
+        </div>
+      `;
     }
   }
 
@@ -451,6 +799,7 @@
   async function openProfileMediaPreview(selectedItem) {
     await settingsReady;
     ensureModal();
+    resetModalPosition();
     state.activeCard = null;
     state.currentMod = null;
     state.title.textContent = selectedItem.alt || "Profile media";
@@ -475,6 +824,7 @@
   async function openMediaLinkPreview(media, title, sourceElement) {
     await settingsReady;
     ensureModal();
+    resetModalPosition();
     state.activeCard = sourceElement;
     state.currentMod = null;
     state.title.textContent = cleanTitle(title) || "Nexus media";
@@ -544,7 +894,7 @@
     if (state.linkPopover) return;
 
     const popover = document.createElement("div");
-    popover.className = "nmp-link-popover";
+    popover.className = `nmp-link-popover${isConfrerieSite() ? " nmp-confrerie-popover" : ""}`;
     popover.hidden = true;
     popover.innerHTML = `
       <button class="nmp-link-popover-button" type="button" aria-label="Preview mod media" title="Preview media">
@@ -577,6 +927,13 @@
           getInlineTitle(state.activeInlineLink, "Nexus media"),
           state.activeInlineLink
         );
+      } else if (state.activeLinkPreview.type === "confrerie") {
+        const mod = state.activeLinkPreview.mod;
+        openConfiguredConfrerieLinkPreview(
+          mod,
+          getInlineTitle(state.activeInlineLink, `Mod ${mod.modId}`),
+          state.activeInlineLink
+        );
       }
       hideLinkPopover();
     });
@@ -586,9 +943,15 @@
   }
 
   function showLinkPopover(anchor, preview, event = null) {
+    if (preview.type === "media" && notificationMediaApi.isGroupedMediaNotification(anchor)) {
+      hideLinkPopover();
+      return;
+    }
+
     if (
       preview.type === "mod" && shouldIgnoreInlineLink(anchor, preview.mod) ||
-      preview.type === "media" && shouldIgnoreMediaLink(anchor, preview.media)
+      preview.type === "media" && shouldIgnoreMediaLink(anchor, preview.media) ||
+      preview.type === "confrerie" && shouldIgnoreConfrerieInlineLink(anchor, preview.mod)
     ) {
       hideLinkPopover();
       return;
@@ -747,6 +1110,7 @@
   async function openPreview(mod, title, card) {
     await settingsReady;
     ensureModal();
+    resetModalPosition();
     state.activeCard = card;
     state.currentMod = mod;
     state.title.textContent = cleanTitle(title) || `Mod ${mod.modId}`;
@@ -1328,10 +1692,11 @@
     state.profileMediaMode = Boolean(options.profileMedia);
     state.currentIndex = 0;
 
+    const externalSite = options.site === "confrerie";
     const fallbackLink = mod
       ? `<a href="${mod.url}?tab=images" target="_blank" rel="noreferrer">Open media tab</a>`
       : options.mediaPageUrl
-        ? `<a href="${escapeHtml(options.mediaPageUrl)}" target="_self">Open on Nexus</a>`
+        ? `<a href="${escapeHtml(options.mediaPageUrl)}" target="_self">${externalSite ? "Open on Confrérie" : "Open on Nexus"}</a>`
         : "";
 
     if (!media.length) {
@@ -1431,7 +1796,7 @@
         <div class="nmp-gallery-footer">
           <div class="nmp-counter"></div>
           <div class="nmp-toolbar">
-            <button type="button" data-nmp-action="open-nexus">Open on Nexus</button>
+            <button type="button" data-nmp-action="open-nexus">${externalSite ? "Open on Confrérie" : "Open on Nexus"}</button>
             ${renderMediaToolbarLinks(mod, options, videos, links)}
           </div>
         </div>
@@ -1807,6 +2172,7 @@
 
     const modal = document.createElement("div");
     modal.className = "nmp-modal";
+    if (isConfrerieSite()) modal.classList.add("nmp-theme-light", "nmp-confrerie-theme");
     modal.hidden = true;
     modal.innerHTML = `
       <div class="nmp-backdrop" data-nmp-close></div>
@@ -1945,7 +2311,15 @@
     state.previousModButton = modal.querySelector("[data-nmp-mod-nav='previous']");
     state.nextModButton = modal.querySelector("[data-nmp-mod-nav='next']");
     state.body = modal.querySelector(".nmp-body");
+    state.modalDragCleanup = modalDragApi.attach(
+      modal.querySelector(".nmp-dialog"),
+      modal.querySelector(".nmp-header")
+    );
     applyModalSettings();
+  }
+
+  function resetModalPosition() {
+    modalDragApi.reset(state.modal?.querySelector(".nmp-dialog"));
   }
 
   function closePreview() {

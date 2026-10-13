@@ -9,4 +9,6 @@ test("declares cross-browser background entry points for Chrome and Firefox", ()
   assert.equal(manifest.background.service_worker, "src/background.js");
   assert.deepEqual(manifest.background.scripts, ["src/background.js"]);
   assert.equal(manifest.content_scripts[0].js.includes("src/description.js"), true);
+  assert.equal(manifest.content_scripts[0].js.includes("src/modal-drag.js"), true);
+  assert.equal(manifest.content_scripts[0].js.includes("src/notification-media.js"), true);
 });

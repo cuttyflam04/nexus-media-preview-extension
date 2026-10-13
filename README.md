@@ -1,6 +1,8 @@
-# Nexus Mods Media Preview
+# Nexus Media Preview
 
 Preview a mod's images and YouTube videos without leaving the current Nexus Mods listing.
+
+The extension also provides an initial media-preview integration for [La Confrérie des Traducteurs](https://www.confrerie-des-traducteurs.fr/skyrim): click the camera control on a mod image to open the same gallery viewer without leaving the page.
 
 ## Features
 
@@ -80,6 +82,17 @@ The next project focus will be **Nexus media support**. The first release concen
 - Media and metadata requests reuse the current Nexus session and are cached for the page lifetime.
 - The extension only treats an exact Nexus download-history sentence as proof of a previous download.
 - If Nexus changes its page markup, some media or metadata may become unavailable without affecting normal site navigation.
+
+### La Confrérie des Traducteurs
+
+On a Confrérie Skyrim mod page, the extension detects the gallery's full-size image links and adds a small camera button. The viewer supports the existing gallery actions (next/previous, zoom, copy, download, and open in a new tab) and YouTube embeds found on the page. The integration is deliberately limited to media links so the site's navigation and download controls remain unchanged.
+
+## Version 1.13.19
+
+- Adds an initial Confrérie des Traducteurs adapter for dynamic media-preview buttons on Skyrim mod galleries.
+- Allows the existing copy and download actions to use Confrérie image hosts.
+- Makes the preview window draggable by its header while keeping it inside the viewport.
+- Coalesces drag updates per animation frame and keeps a usable part of the header visible when positioning the window near an edge.
 
 ## Version 1.13.18
 

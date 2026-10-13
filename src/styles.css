@@ -317,15 +317,222 @@
   color: #263142 !important;
 }
 
+/* Confrérie uses a light content surface with warm brown/orange accents. */
+.nmp-modal.nmp-confrerie-theme .nmp-backdrop {
+  background: rgba(15, 18, 22, 0.48);
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-dialog {
+  background: #f5f6f8 !important;
+  border-color: #c9cdd4 !important;
+  box-shadow: 0 24px 72px rgba(17, 22, 29, 0.34);
+  color: #252a31 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-header,
+.nmp-modal.nmp-confrerie-theme .nmp-header-main {
+  background: #ffffff !important;
+  border-bottom-color: #d5d9e0 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-mod-navigation button,
+.nmp-modal.nmp-confrerie-theme .nmp-close,
+.nmp-modal.nmp-confrerie-theme .nmp-info-toggle {
+  background: #f0f1f3 !important;
+  border-color: #c3c8d0 !important;
+  color: #3b424c !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-mod-navigation button:hover:not(:disabled),
+.nmp-modal.nmp-confrerie-theme .nmp-mod-navigation button:focus-visible:not(:disabled),
+.nmp-modal.nmp-confrerie-theme .nmp-close:hover,
+.nmp-modal.nmp-confrerie-theme .nmp-close:focus-visible,
+.nmp-modal.nmp-confrerie-theme .nmp-info-toggle:hover,
+.nmp-modal.nmp-confrerie-theme .nmp-info-toggle:focus-visible {
+  background: #e5e7eb !important;
+  border-color: #a7adb7 !important;
+  color: #7a3b08 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-title-link {
+  color: #242a33 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-title-link:hover,
+.nmp-modal.nmp-confrerie-theme .nmp-title-link:focus-visible {
+  color: #9b4d08 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-meta-card {
+  background: #f0f1f3 !important;
+  border-color: #c7ccd4 !important;
+  color: #3c4653 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-content,
+.nmp-modal.nmp-confrerie-theme .nmp-body {
+  background: #f5f6f8 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-info-card {
+  background: #ffffff !important;
+  border-color: #d0d4db !important;
+  color: #303640 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-info-card h3 {
+  color: #292f38 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-info-card ul a {
+  background: #f0f1f3 !important;
+  border-color: #cbd0d8 !important;
+  color: #303944 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-info-card ul a:hover,
+.nmp-modal.nmp-confrerie-theme .nmp-info-card ul a:focus-visible {
+  border-color: #a4510b !important;
+  color: #8a4308 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-gallery-main {
+  background: #e5e7eb !important;
+  border-color: #cbd0d8 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-image-actions button {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: #b8bec8 !important;
+  color: #343c47 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-image-actions button:hover,
+.nmp-modal.nmp-confrerie-theme .nmp-image-actions button:focus-visible {
+  background: #fff4e9 !important;
+  border-color: #a4510b !important;
+  color: #8a4308 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-nav {
+  background: rgba(255, 255, 255, 0.42) !important;
+  color: #4b5562 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-nav:hover,
+.nmp-modal.nmp-confrerie-theme .nmp-nav:focus-visible {
+  background: rgba(255, 255, 255, 0.86) !important;
+  color: #8a4308 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-gallery-footer,
+.nmp-modal.nmp-confrerie-theme .nmp-video-section {
+  border-color: #d0d4db !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-counter,
+.nmp-modal.nmp-confrerie-theme .nmp-video-heading,
+.nmp-modal.nmp-confrerie-theme .nmp-loading,
+.nmp-modal.nmp-confrerie-theme .nmp-empty {
+  color: #4a535e !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-toolbar button,
+.nmp-modal.nmp-confrerie-theme .nmp-toolbar a,
+.nmp-modal.nmp-confrerie-theme .nmp-empty a {
+  background: #9b4d08 !important;
+  color: #ffffff !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-toolbar button:hover,
+.nmp-modal.nmp-confrerie-theme .nmp-toolbar a:hover,
+.nmp-modal.nmp-confrerie-theme .nmp-empty a:hover {
+  background: #b86012 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-thumb {
+  background: #e2e5e9 !important;
+  border-color: #c4cad2 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-thumb:hover,
+.nmp-modal.nmp-confrerie-theme .nmp-thumb:focus-visible,
+.nmp-modal.nmp-confrerie-theme .nmp-thumb.is-active {
+  border-color: #a4510b !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-video-item {
+  background: #ffffff !important;
+  border-color: #cbd0d8 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-video-title span,
+.nmp-modal.nmp-confrerie-theme .nmp-video-title a,
+.nmp-modal.nmp-confrerie-theme .nmp-nexus-video-links a {
+  color: #303944 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-video-title a:hover,
+.nmp-modal.nmp-confrerie-theme .nmp-video-title a:focus-visible {
+  color: #8a4308 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-empty strong {
+  color: #292f38 !important;
+}
+
+.nmp-modal.nmp-confrerie-theme .nmp-empty span {
+  color: #5c6570 !important;
+}
+
+.nmp-confrerie-preview-button {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: #b9bec7 !important;
+  color: #343c47 !important;
+}
+
+.nmp-confrerie-preview-button:hover,
+.nmp-confrerie-preview-button:focus-visible {
+  background: #fff4e9 !important;
+  border-color: #a4510b !important;
+  color: #8a4308 !important;
+}
+
+.nmp-confrerie-popover .nmp-link-popover-button {
+  background: #ffffff;
+  border-color: #bfc5ce;
+  box-shadow: 0 8px 24px rgba(27, 33, 42, 0.24);
+  color: #303944;
+}
+
+.nmp-confrerie-popover .nmp-link-popover-button:hover,
+.nmp-confrerie-popover .nmp-link-popover-button:focus-visible {
+  background: #fff4e9;
+  border-color: #a4510b;
+  color: #8a4308;
+}
+
 .nmp-header {
   align-items: center;
   background: #282934;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: grab;
+  touch-action: none;
   display: flex;
   gap: 16px;
   justify-content: space-between;
   min-height: 66px;
   padding: 14px 18px;
+}
+
+.nmp-dialog.is-dragging,
+.nmp-dialog.is-dragging .nmp-header {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.nmp-dialog.is-dragging {
+  will-change: left, top;
 }
 
 .nmp-header-main {

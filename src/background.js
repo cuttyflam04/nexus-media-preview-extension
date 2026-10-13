@@ -41,7 +41,8 @@ function isAllowedImageUrl(rawUrl) {
     const url = new URL(rawUrl);
     return url.protocol === "https:" && (
       url.hostname === "www.nexusmods.com" ||
-      url.hostname === "staticdelivery.nexusmods.com"
+      url.hostname === "staticdelivery.nexusmods.com" ||
+      url.hostname === "mods.confrerie-des-traducteurs.fr"
     );
   } catch {
     return false;
