@@ -411,13 +411,22 @@
     }
   }
 
-  document.addEventListener("pointerover", (event) => {
+  // Inside the quick search on mod pages, Nexus swallows pointerover before it
+  // reaches the document, so pointermove is watched too. Both run at window
+  // capture and only do work when the element under the pointer changes.
+  let lastOrigin = null;
+  function onPointer(event) {
     if (event.pointerType === "touch") return;
     pointer.x = event.clientX;
     pointer.y = event.clientY;
-    hovered = resolveTarget(origin(event));
+    const node = origin(event);
+    if (node === lastOrigin) return;
+    lastOrigin = node;
+    hovered = resolveTarget(node);
     if (hovered) activate(hovered, { x: event.clientX, y: event.clientY });
-  }, true);
+  }
+  window.addEventListener("pointerover", onPointer, true);
+  window.addEventListener("pointermove", onPointer, { capture: true, passive: true });
 
   // relatedTarget is retargeted at shadow boundaries, so ask :hover instead
   // (it works across them) once the pointer has settled.
