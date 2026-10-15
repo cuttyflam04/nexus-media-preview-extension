@@ -4,9 +4,11 @@
   position: relative !important;
 }
 
+/* Bottom-left: Nexus puts its "Update available" badge top-left and the
+   options menu top-right of mod cards. */
 .nmp-button {
   position: absolute !important;
-  top: 8px;
+  bottom: 8px;
   left: 8px;
   z-index: 5;
   display: inline-grid !important;
@@ -42,6 +44,7 @@
 /* Notification thumbnails are 56px: a compact camera fits in a corner. */
 .nmp-button.is-small {
   top: 2px;
+  bottom: auto;
   left: 2px;
   width: 24px;
   height: 24px;

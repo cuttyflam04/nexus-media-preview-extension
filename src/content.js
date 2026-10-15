@@ -85,7 +85,9 @@
     if (tile) {
       const anchor = tile.querySelector("a[href] img")?.closest("a[href]");
       const link = linkOf(anchor);
-      return link ? { kind: "tile", tile, anchor, holder: anchor.parentElement, link } : null;
+      // Pin the button to the image frame: logged-in cards show Nexus's own
+      // "Update available" / downloaded badge in the top-left corner.
+      return link ? { kind: "tile", tile, anchor, holder: anchor.querySelector("img").parentElement, link } : null;
     }
 
     const anchor = node.closest("a[href]");
