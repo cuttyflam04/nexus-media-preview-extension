@@ -13,6 +13,7 @@ Complete rewrite, validated against the live Nexus Mods pages in a real browser.
 - **Hover peek.** Resting on a mod card flips its picture through the mod's screenshots (can be turned off).
 - **Isolated UI.** The viewer lives in a shadow root: site styles cannot break it, and it cannot affect the site.
 - Works inside the Nexus quick-search dialog (including on legacy mod pages, where it lives in a shadow root), in notifications, and on legacy mod pages (text links, requirements).
+- **Posts beside the preview.** The Posts link opens the mod's latest threads in a second floating card (pinned first, uploader badged, replies folded, Load more); it follows the mod as you browse.
 - Requirements now read Nexus's own "Nexus requirements" and "Off-site requirements" tables.
 - Adult-only mods show a clear message instead of an empty gallery when the session cannot see them.
 - Removed: La Confrérie des Traducteurs support (Nexus Mods only), grouped-notification heuristics, Vimeo/"Nexus video" links setting, and the 1.x size/class card guessing.

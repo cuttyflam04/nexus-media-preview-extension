@@ -37,6 +37,7 @@ Upload in this order; the first one becomes the card thumbnail in Nexus listings
 | `05-videos.jpg` | Gallery | YouTube videos below the screenshots, playing in place. |
 | `06-cinema.jpg` | Gallery | Cinema mode for media pages and profiles. |
 | `07-settings.jpg` | Gallery | Settings. |
+| `08-posts.jpg` | Gallery | Read the latest posts in a card beside the preview. |
 | `header.jpg` (1920×480) | Page header | — |
 
 All captures are 1920×1080, taken on the live site logged out, on safe-for-work mods. If Nexus asks
@@ -67,6 +68,7 @@ Build with `scripts/package-distributions.ps1` (outputs to `dist/`).
 - Cinema mode for media pages, profile Media tabs and media links.
 - Works in the header search (including on mod pages) and in notifications.
 - YouTube videos below the gallery; screenshots first.
+- Posts card: the mod's latest threads beside the preview, with Load more.
 - Foldable requirements, Nexus and off-site.
 - Portrait screenshots letterboxed over a blurred backdrop instead of cropped.
 - Keyboard and accessibility: focus stays in the preview and returns to the card; reduced motion respected.

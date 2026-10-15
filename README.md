@@ -10,6 +10,7 @@ Preview a mod's screenshots, videos, description and requirements without leavin
 - **Link popover**: hovering a link to a mod or a Nexus image/video shows a small *Preview* button.
 - **Screenshots first**: gallery and full-size lightbox (wheel zoom, drag-to-pan, double-click zoom) for images; the mod's YouTube videos sit in their own section below.
 - **Mod details**: author, downloads, endorsements, short description, Nexus and off-site requirements, and your last download date when Nexus shows it.
+- **Posts card**: open the mod's latest threads in a card beside the preview; it follows you from mod to mod.
 - **Browse without closing**: previous/next mod in the header (`Alt+←` / `Alt+→`) follows the cards on the page.
 - **Image actions**: copy, download, open in a new tab.
 - **Cinema mode for media**: on Media pages, profile Media tabs and media links, a near-fullscreen view walks the whole grid (images and videos) with the post's details beside it.
