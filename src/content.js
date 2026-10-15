@@ -11,6 +11,8 @@
 
   const MOD_TILE = "[data-e2eid='mod-tile'], [data-e2eid='mod-tile-teaser']";
   const TILE = `${MOD_TILE}, [data-e2eid='media-tile']`;
+  // Notification rows (bell panel in the header, /notifications pages).
+  const NOTIFICATION_IMAGE = "img[data-testid='notification-group-image']";
   const IGNORED_LINK_AREA = "nav, footer, [role='navigation'], [role='tab'], [data-e2eid$='-header'], #mod-page-tab-list, .pagination";
   const CAMERA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg>';
 
@@ -94,6 +96,12 @@
     if (currentPage?.site === "confrerie" && /\/images\/big\//.test(anchor.getAttribute("href"))) {
       return { kind: "image", anchor, holder: anchor, link: { ...currentPage, focusSrc: anchor.href } };
     }
+    // The bell panel lives inside the site header, so check it before ignoring header links.
+    const thumb = anchor.querySelector(NOTIFICATION_IMAGE);
+    if (thumb) {
+      const link = linkOf(anchor);
+      return link && link.url !== currentPage?.url ? { kind: "notification", anchor, holder: thumb.parentElement, link, small: true } : null;
+    }
     if (anchor.closest(IGNORED_LINK_AREA)) return null;
 
     const link = linkOf(anchor);
@@ -109,7 +117,7 @@
     holder.classList.add("nmp-host");
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "nmp-button";
+    button.className = target.small ? "nmp-button is-small" : "nmp-button";
     button.title = "Preview media (Space)";
     button.setAttribute("aria-label", "Preview media");
     button.innerHTML = CAMERA;
@@ -173,9 +181,12 @@
     ].filter(Boolean);
   }
 
-  function modTargets() {
+  function modTargets(kind = "tile") {
     const seen = new Set();
-    return [...document.querySelectorAll(MOD_TILE)]
+    const nodes = kind === "notification"
+      ? [...document.querySelectorAll(NOTIFICATION_IMAGE)].map((img) => img.closest("a[href]")).filter(Boolean)
+      : [...document.querySelectorAll(MOD_TILE)];
+    return nodes
       .map(resolveTarget)
       .filter((target) => target?.link.site === "nexus" && !seen.has(target.link.url) && seen.add(target.link.url));
   }
@@ -197,9 +208,11 @@
 
   async function openMod(target, token) {
     const { link, tile } = target;
-    const title = textOf(tile?.querySelector("[data-e2eid='mod-tile-title']")) || target.anchor.querySelector("img")?.alt || textOf(target.anchor) || `Mod ${link.modId}`;
+    const title = target.kind === "notification"
+      ? `Mod ${link.modId}`
+      : textOf(tile?.querySelector("[data-e2eid='mod-tile-title']")) || target.anchor.querySelector("img")?.alt || textOf(target.anchor) || `Mod ${link.modId}`;
     const chips = chipsFromTile(tile);
-    const canNavigate = target.kind === "tile" && modTargets().length > 1;
+    const canNavigate = (target.kind === "tile" || target.kind === "notification") && modTargets(target.kind).length > 1;
     viewer.open({ site: "nexus", title, url: link.url, chips, canNavigate, context: target.anchor });
     try {
       const data = await loadMod(link);
@@ -286,11 +299,11 @@
 
   function navigate(direction) {
     if (!current) return;
-    const list = modTargets();
+    const list = modTargets(current.kind === "notification" ? "notification" : "tile");
     const index = list.findIndex((target) => target.link.url === current.link.url);
     if (index < 0 || list.length < 2) return;
     const next = list[(index + direction + list.length) % list.length];
-    next.tile?.scrollIntoView({ block: "center", behavior: "smooth" });
+    (next.tile || next.anchor).scrollIntoView({ block: "nearest", behavior: "smooth" });
     openTarget(next);
   }
 

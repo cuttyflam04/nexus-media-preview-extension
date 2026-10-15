@@ -39,6 +39,20 @@
   color: #1b1206;
 }
 
+/* Notification thumbnails are 56px: a compact camera fits in a corner. */
+.nmp-button.is-small {
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+
+.nmp-button.is-small svg {
+  width: 14px;
+  height: 14px;
+}
+
 .nmp-button:focus-visible {
   outline: 2px solid #f08a24;
   outline-offset: 2px;

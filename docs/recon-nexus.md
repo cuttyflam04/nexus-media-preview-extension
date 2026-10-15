@@ -27,6 +27,15 @@ Tailwind class names are unstable: never select on them. Use `data-e2eid`.
 - New hosts: `images.nexusmods.com` (game art), `avatars.nexusmods.com`. Mod/media images remain on
   `staticdelivery.nexusmods.com`.
 
+## Notifications (logged in, checked 2026-10-15)
+
+- Bell panel: Headless UI popover `#headlessui-popover-panel-*` rendered **inside**
+  `[data-e2eid='desktop-header']` (so header-wide link filters must not apply to it).
+- Full page `/notifications/all?game={game}`: same rows.
+- Row = `a[href]` to the mod (`/{game}/mods/{id}`, sometimes `?tab=files`) containing
+  `img[data-testid='notification-group-image']` (56px thumbnail) and a "Mark as read" button.
+- Grouped rows ("X published 2 new mods") link to a single mod.
+
 ## Legacy mod page
 
 - Tab counters: `#mod-page-tab-images` ("Images 23"), `#mod-page-tab-videos`, ...
