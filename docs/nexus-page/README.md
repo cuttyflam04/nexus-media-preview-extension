@@ -37,7 +37,7 @@ Upload in this order; the first one becomes the card thumbnail in Nexus listings
 | `05-videos.jpg` | Gallery | YouTube videos below the screenshots, playing in place. |
 | `06-cinema.jpg` | Gallery | Cinema mode for media pages and profiles. |
 | `07-settings.jpg` | Gallery | Settings. |
-| `08-posts.jpg` | Gallery | Read the latest posts in a card beside the preview. |
+| `08-posts.jpg` | Gallery | Read and search the mod's posts in a card beside the preview. |
 | `header.jpg` (1920×480) | Page header | — |
 
 All captures are 1920×1080, taken on the live site logged out, on safe-for-work mods. If Nexus asks
