@@ -199,7 +199,30 @@
       .filter(Boolean)
       .map((id) => video(id, title));
     const nexus = [...doc.querySelectorAll("a[href*='nexusmods.com']")].map((a) => parseModUrl(a.href)).find(Boolean);
-    return { title, url: pageUrl, nexusUrl: nexus?.url || null, items: dedupe([...images, ...videos]) };
+
+    // "Prérequis" is an <h3> followed by a list; #prerequis itself only holds
+    // the credits ("Traduit par …", "Testé par …").
+    const heading = [...doc.querySelectorAll("h2, h3, h4, h5")].find((h) => /^pr[ée]requis$/i.test(textOf(h)));
+    const list = heading?.nextElementSibling?.matches("ul, ol") ? heading.nextElementSibling : null;
+    const requirements = [...(list?.children || [])].map((li) => {
+      const link = li.querySelector("a[href]");
+      const url = link ? toUrl(link.getAttribute("href"), pageUrl)?.href : null;
+      const name = textOf(li);
+      return name ? { name, url, offsite: Boolean(url) && !/nexusmods\.com|confrerie-des-traducteurs\.fr/.test(url) } : null;
+    }).filter(Boolean);
+
+    const original = [...doc.querySelectorAll("h3")].map(textOf).find((text) => /^mod original de /i.test(text));
+    return {
+      title,
+      url: pageUrl,
+      nexusUrl: nexus?.url || null,
+      summary: cleanText(doc.querySelector("meta[property='og:description'], meta[name='description']")?.content) || null,
+      requirements,
+      credits: [...doc.querySelectorAll("#prerequis li")].map(textOf).filter(Boolean),
+      version: textOf([...doc.querySelectorAll("h2")].find((h) => /^version\b/i.test(textOf(h)))).replace(/^version\s*/i, "").split(/\s+-\s+/)[0] || null,
+      originalAuthor: original ? original.replace(/^mod original de\s*/i, "") : null,
+      items: dedupe([...images, ...videos])
+    };
   }
 
   globalThis.NexusMediaPreviewSources = {

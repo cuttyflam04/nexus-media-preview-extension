@@ -301,8 +301,14 @@
         : await loadConfrerie(link);
       if (token !== openToken) return;
       const startIndex = link.focusSrc ? Math.max(0, data.items.findIndex((item) => item.src === link.focusSrc)) : 0;
+      const chips = [
+        data.version ? { icon: "check", label: `v${data.version}`, title: "Translated version" } : null,
+        ...data.credits.map((credit) => ({ icon: "user", label: credit })),
+        settings.showAuthor && data.originalAuthor ? { icon: "user", label: `Original by ${data.originalAuthor}`, url: data.nexusUrl } : null
+      ].filter(Boolean);
       viewer.update({
         ...data,
+        chips,
         startIndex,
         links: [
           { label: "Mod page", url: link.url },

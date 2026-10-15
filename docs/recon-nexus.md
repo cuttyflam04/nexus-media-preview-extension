@@ -71,3 +71,17 @@ Tailwind class names are unstable: never select on them. Use `data-e2eid`.
 3. Media tiles need no fetch at all.
 4. Search = same tiles; no "any input non-empty" heuristic needed.
 5. Still unknown: notifications panel (login needed), "last downloaded" text, La Confrérie.
+
+## La Confrérie des Traducteurs (checked 2026-10-15)
+
+- Mod page `/skyrim/mods/{id}/{category}/{slug}` (`/skyrim/mods/{id}` redirects there).
+- Screenshots: slick slider inside `<header id="header">`, `a[href*='/images/big/']` on
+  `mods.confrerie-des-traducteurs.fr`; slick clones duplicate anchors (dedupe by URL). No thumbnail
+  variant exists (`/images/small|thumb|mini/` are 404): the site itself shows the big files.
+- Summary: `meta[property='og:description']`. Version: first `h2` "Version 1.2 - …".
+  Original: `h3` "Mod original de {author}" + `a[href*='nexusmods.com']` "Mod original".
+- `#prerequis` holds **credits** ("Traduit par …", "Testé par …"), not requirements.
+- Requirements: `h3` "Prérequis" followed by a `ul` (links to Nexus or Confrérie mods, or plain text);
+  often a "Recommandé" block next to it.
+- Listing pages (home, categories) link mods with text only, no thumbnails.
+
