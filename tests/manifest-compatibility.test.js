@@ -10,7 +10,7 @@ test("declares cross-browser background entry points for Chrome and Firefox", ()
   assert.deepEqual(manifest.background.scripts, ["src/background.js"]);
   assert.equal(manifest.content_scripts[0].js.includes("src/description.js"), true);
   assert.equal(manifest.content_scripts[0].js.includes("src/modal-drag.js"), true);
-  assert.deepEqual(manifest.web_accessible_resources[0].resources, ["src/viewer.css"]);
+  assert.deepEqual(manifest.web_accessible_resources[0].resources, ["src/viewer.css", "src/styles.css"]);
 });
 
 test("loads every content script dependency before content.js", () => {

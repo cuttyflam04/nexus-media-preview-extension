@@ -36,6 +36,14 @@ Tailwind class names are unstable: never select on them. Use `data-e2eid`.
   `img[data-testid='notification-group-image']` (56px thumbnail) and a "Mark as read" button.
 - Grouped rows ("X published 2 new mods") link to a single mod.
 
+## Legacy mod page: header in a shadow root
+
+- On legacy mod pages the new header (nav, bell panel, quick search) is rendered inside an **open**
+  shadow root on `#next-shadow-root`. Document listeners see only that host: use
+  `event.composedPath()[0]`, walk `activeElement.shadowRoot.activeElement` for focus, and
+  `shadowRoot.elementFromPoint` for hit tests. Content-script CSS does not apply inside it.
+- Quick-search results there are the usual `[data-e2eid='mod-tile-teaser']` inside a `[role='dialog']`.
+
 ## Legacy mod page
 
 - Tab counters: `#mod-page-tab-images` ("Images 23"), `#mod-page-tab-videos`, ...

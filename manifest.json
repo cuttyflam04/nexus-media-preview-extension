@@ -55,7 +55,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "src/viewer.css"
+        "src/viewer.css",
+        "src/styles.css"
       ],
       "matches": [
         "https://www.nexusmods.com/*",

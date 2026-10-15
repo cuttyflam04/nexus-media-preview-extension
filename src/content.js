@@ -79,6 +79,7 @@
 
   function resolveTarget(node) {
     if (!(node instanceof Element) || node.closest("nmp-root, .nmp-button")) return null;
+    if (node.getRootNode().host?.localName === "nmp-root") return null;
 
     const tile = node.closest(TILE);
     if (tile) {
@@ -111,9 +112,23 @@
     return textOf(anchor) ? { kind: "text", anchor, link } : null;
   }
 
+  // styles.css is a content-script stylesheet: it does not reach into the
+  // page's own shadow roots, so link it there once.
+  const styledRoots = new WeakSet();
+  function styleShadowRoot(node) {
+    const root = node.getRootNode();
+    if (!(root instanceof ShadowRoot) || styledRoots.has(root) || !ext) return;
+    styledRoots.add(root);
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = ext.runtime.getURL("src/styles.css");
+    root.append(link);
+  }
+
   function ensureButton(target) {
     const { holder } = target;
     if (!holder || holder.querySelector(":scope > .nmp-button")) return;
+    styleShadowRoot(holder);
     holder.classList.add("nmp-host");
     const button = document.createElement("button");
     button.type = "button";
@@ -181,11 +196,11 @@
     ].filter(Boolean);
   }
 
-  function modTargets(kind = "tile") {
+  function modTargets(kind = "tile", root = document) {
     const seen = new Set();
     const nodes = kind === "notification"
-      ? [...document.querySelectorAll(NOTIFICATION_IMAGE)].map((img) => img.closest("a[href]")).filter(Boolean)
-      : [...document.querySelectorAll(MOD_TILE)];
+      ? [...root.querySelectorAll(NOTIFICATION_IMAGE)].map((img) => img.closest("a[href]")).filter(Boolean)
+      : [...root.querySelectorAll(MOD_TILE)];
     return nodes
       .map(resolveTarget)
       .filter((target) => target?.link.site === "nexus" && !seen.has(target.link.url) && seen.add(target.link.url));
@@ -212,7 +227,7 @@
       ? `Mod ${link.modId}`
       : textOf(tile?.querySelector("[data-e2eid='mod-tile-title']")) || target.anchor.querySelector("img")?.alt || textOf(target.anchor) || `Mod ${link.modId}`;
     const chips = chipsFromTile(tile);
-    const canNavigate = (target.kind === "tile" || target.kind === "notification") && modTargets(target.kind).length > 1;
+    const canNavigate = (target.kind === "tile" || target.kind === "notification") && modTargets(target.kind, target.anchor.getRootNode()).length > 1;
     viewer.open({ site: "nexus", title, url: link.url, chips, canNavigate, context: target.anchor });
     try {
       const data = await loadMod(link);
@@ -299,7 +314,7 @@
 
   function navigate(direction) {
     if (!current) return;
-    const list = modTargets(current.kind === "notification" ? "notification" : "tile");
+    const list = modTargets(current.kind === "notification" ? "notification" : "tile", current.anchor.getRootNode());
     const index = list.findIndex((target) => target.link.url === current.link.url);
     if (index < 0 || list.length < 2) return;
     const next = list[(index + direction + list.length) % list.length];
@@ -362,8 +377,30 @@
   }
 
   // ---------- Events (delegated, no page scanning) ----------
+  // On legacy mod pages Nexus renders its header (and the quick-search
+  // results) inside an open shadow root (#next-shadow-root). Document
+  // listeners only see that host, so every handler reads the real origin
+  // from composedPath() and the deepest focused / hovered element.
   let hovered = null;
   const pointer = { x: -1, y: -1 };
+
+  const origin = (event) => event.composedPath()[0];
+
+  function deepActiveElement() {
+    let active = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return active;
+  }
+
+  function deepElementFromPoint(x, y) {
+    let element = document.elementFromPoint(x, y);
+    while (element?.shadowRoot) {
+      const inner = element.shadowRoot.elementFromPoint(x, y);
+      if (!inner || inner === element) break;
+      element = inner;
+    }
+    return element;
+  }
 
   function activate(target, point) {
     if (target.kind === "text") {
@@ -378,27 +415,31 @@
     if (event.pointerType === "touch") return;
     pointer.x = event.clientX;
     pointer.y = event.clientY;
-    hovered = resolveTarget(event.target);
+    hovered = resolveTarget(origin(event));
     if (hovered) activate(hovered, { x: event.clientX, y: event.clientY });
   }, true);
 
+  // relatedTarget is retargeted at shadow boundaries, so ask :hover instead
+  // (it works across them) once the pointer has settled.
+  let outCheck = 0;
   document.addEventListener("pointerout", (event) => {
-    const to = event.relatedTarget;
-    const anchor = viewer.popoverAnchor;
-    if (anchor && event.target instanceof Node && anchor.contains(event.target) && !(to instanceof Node && anchor.contains(to))) {
-      viewer.scheduleHidePopover();
-    }
-    if (peek.target && !(to instanceof Node && peek.target.tile.contains(to))) stopPeek();
-    if (!to) hovered = null;
+    if (!event.relatedTarget) hovered = null;
+    cancelAnimationFrame(outCheck);
+    outCheck = requestAnimationFrame(() => {
+      const anchor = viewer.popoverAnchor;
+      if (anchor && !anchor.matches(":hover")) viewer.scheduleHidePopover();
+      if (peek.target && !peek.target.tile.matches(":hover")) stopPeek();
+    });
   }, true);
 
   document.addEventListener("focusin", (event) => {
-    const target = resolveTarget(event.target);
+    const target = resolveTarget(origin(event));
     if (target) activate(target);
   });
 
   document.addEventListener("click", (event) => {
-    const button = event.target instanceof Element && event.target.closest(".nmp-button");
+    const node = origin(event);
+    const button = node instanceof Element && node.closest(".nmp-button");
     if (!button) return;
     event.preventDefault();
     event.stopPropagation();
@@ -409,12 +450,12 @@
   document.addEventListener("keydown", (event) => {
     if (event.key !== " " || event.repeat || event.defaultPrevented || viewer.isOpen || !settings.keyboardShortcuts) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
-    const active = document.activeElement;
+    const active = deepActiveElement();
     if (active?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active?.tagName || "")) return;
     // The pointer may rest on a card the preview was covering: look it up again.
     const target = resolveTarget(active)
       || (hovered?.anchor.isConnected ? hovered : null)
-      || (pointer.x >= 0 ? resolveTarget(document.elementFromPoint(pointer.x, pointer.y)) : null);
+      || (pointer.x >= 0 ? resolveTarget(deepElementFromPoint(pointer.x, pointer.y)) : null);
     if (!target) return;
     event.preventDefault();
     event.stopPropagation();
