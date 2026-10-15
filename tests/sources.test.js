@@ -26,8 +26,8 @@ test("parses Nexus mod links and ignores game hubs", () => {
   assert.equal(parseModUrl("https://example.com/skyrimspecialedition/mods/1"), null);
 });
 
-test("parses Nexus media and La Confrerie mod links", () => {
-  const { parseMediaUrl, parseConfrerieModUrl, parseAnyUrl } = loadSources();
+test("parses Nexus media links", () => {
+  const { parseMediaUrl, parseAnyUrl } = loadSources();
 
   assert.deepEqual(plain(parseMediaUrl("https://www.nexusmods.com/skyrimspecialedition/videos/41397")), {
     site: "nexus-media",
@@ -35,11 +35,7 @@ test("parses Nexus media and La Confrerie mod links", () => {
     url: "https://www.nexusmods.com/skyrimspecialedition/videos/41397"
   });
   assert.equal(parseMediaUrl("https://www.nexusmods.com/skyrimspecialedition/images/317495").kind, "image");
-  assert.equal(
-    parseConfrerieModUrl("https://www.confrerie-des-traducteurs.fr/skyrim/mods/5037/audio/extension_des_dialogues_des_gardes#top").url,
-    "https://www.confrerie-des-traducteurs.fr/skyrim/mods/5037/audio/extension_des_dialogues_des_gardes"
-  );
-  assert.equal(parseConfrerieModUrl("https://www.confrerie-des-traducteurs.fr/skyrim/categories/audio"), null);
+  assert.equal(parseAnyUrl("https://www.confrerie-des-traducteurs.fr/skyrim/mods/5037/audio/x"), null);
   assert.equal(parseAnyUrl("https://www.nexusmods.com/profile/someone"), null);
 });
 
@@ -71,5 +67,5 @@ test("cleans site suffixes from page titles", () => {
   const { cleanTitle } = loadSources();
 
   assert.equal(cleanTitle("SkyUI at Skyrim Special Edition Nexus - Mods and Community"), "SkyUI");
-  assert.equal(cleanTitle("  Extension   des gardes - La Confrérie des Traducteurs"), "Extension des gardes");
+  assert.equal(cleanTitle("  Kick over   enemies - Nexus Mods"), "Kick over enemies");
 });

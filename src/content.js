@@ -48,25 +48,14 @@
   }
 
   async function fetchDocument(url) {
-    let html;
-    if (new URL(url).origin === location.origin) {
-      const response = await fetch(url, { credentials: "include" });
-      if (!response.ok) throw new Error(`The page answered ${response.status}.`);
-      html = await response.text();
-    } else {
-      // Cross-site (e.g. a Nexus link on La Confrérie): the background worker
-      // holds the host permission, the page origin does not.
-      const response = await message({ type: "nmp-fetch-page", url });
-      if (!response?.ok) throw new Error(response?.error || "The page could not be loaded.");
-      html = response.html;
-    }
-    return new DOMParser().parseFromString(html, "text/html");
+    const response = await fetch(url, { credentials: "include" });
+    if (!response.ok) throw new Error(`The page answered ${response.status}.`);
+    return new DOMParser().parseFromString(await response.text(), "text/html");
   }
 
   const loadMod = (mod) => cached(mod.url, async () => sources.parseNexusModPage(await fetchDocument(mod.url), mod));
   const loadVideos = (mod) => cached(`${mod.url}#videos`, async () => sources.parseNexusVideosTab(await fetchDocument(`${mod.url}?tab=videos`)));
   const loadMedia = (link) => cached(link.url, async () => sources.parseNexusMediaPage(await fetchDocument(link.url), link.url));
-  const loadConfrerie = (link) => cached(link.url, async () => sources.parseConfreriePage(await fetchDocument(link.url), link.url));
 
   // ---------- Targets ----------
   const textOf = (node) => sources.cleanText(node?.textContent);
@@ -94,11 +83,6 @@
     if (!anchor) return null;
 
     const currentPage = pageLink();
-    // La Confrérie mod page: full-size screenshots (a slider inside <header>)
-    // open the page gallery.
-    if (currentPage?.site === "confrerie" && /\/images\/big\//.test(anchor.getAttribute("href"))) {
-      return { kind: "image", anchor, holder: anchor, link: { ...currentPage, focusSrc: anchor.href } };
-    }
     // The bell panel lives inside the site header, so check it before ignoring header links.
     const thumb = anchor.querySelector(NOTIFICATION_IMAGE);
     if (thumb) {
@@ -219,8 +203,7 @@
     current = target;
     const token = ++openToken;
     if (link.site === "nexus") openMod(target, token);
-    else if (link.site === "nexus-media") openMedia(target, token);
-    else openConfrerie(target, token);
+    else openMedia(target, token);
   }
 
   async function openMod(target, token) {
@@ -287,34 +270,6 @@
     try {
       const data = await loadMedia(link);
       if (token === openToken) viewer.update({ ...data, itemTitles: true, links: [{ label: "Media page", url: link.url }] });
-    } catch (error) {
-      if (token === openToken) viewer.fail(error.message, link.url);
-    }
-  }
-
-  async function openConfrerie(target, token) {
-    const { link } = target;
-    viewer.open({ site: "confrerie", title: textOf(target.anchor) || "Confrérie mod", url: link.url, context: target.anchor });
-    try {
-      const data = link.url === pageLink()?.url
-        ? sources.parseConfreriePage(document, link.url)
-        : await loadConfrerie(link);
-      if (token !== openToken) return;
-      const startIndex = link.focusSrc ? Math.max(0, data.items.findIndex((item) => item.src === link.focusSrc)) : 0;
-      const chips = [
-        data.version ? { icon: "check", label: `v${data.version}`, title: "Translated version" } : null,
-        ...data.credits.map((credit) => ({ icon: "user", label: credit })),
-        settings.showAuthor && data.originalAuthor ? { icon: "user", label: `Original by ${data.originalAuthor}`, url: data.nexusUrl } : null
-      ].filter(Boolean);
-      viewer.update({
-        ...data,
-        chips,
-        startIndex,
-        links: [
-          { label: "Mod page", url: link.url },
-          ...(data.nexusUrl ? [{ label: "Original on Nexus", url: data.nexusUrl }] : [])
-        ]
-      });
     } catch (error) {
       if (token === openToken) viewer.fail(error.message, link.url);
     }

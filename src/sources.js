@@ -1,9 +1,8 @@
-// Pure parsing for Nexus Mods and La Confrérie pages. No page side effects:
+// Pure parsing for Nexus Mods pages. No page side effects:
 // every function takes a URL string or a parsed Document and returns data.
 // Selectors come from docs/recon-nexus.md (observed on the live sites).
 (() => {
   const NEXUS_HOST = "www.nexusmods.com";
-  const CONFRERIE_HOST_RE = /^(?:www\.)?confrerie-des-traducteurs\.fr$/i;
 
   function toUrl(href, base) {
     try {
@@ -20,8 +19,7 @@
   function cleanTitle(value) {
     return cleanText(value)
       .replace(/\s+at\s+.+?\s+Nexus\s+-\s+Mods.*$/i, "")
-      .replace(/\s+(?:at|on|-)\s+Nexus Mods.*$/i, "")
-      .replace(/\s+-\s+La Confr[ée]rie des Traducteurs$/i, "");
+      .replace(/\s+(?:at|on|-)\s+Nexus Mods.*$/i, "");
   }
 
   // https://www.nexusmods.com/{game}/mods/{id} -> { game, modId, url }
@@ -46,17 +44,8 @@
     };
   }
 
-  // https://www.confrerie-des-traducteurs.fr/skyrim/mods/{id}/{category}/{slug}
-  function parseConfrerieModUrl(href, base) {
-    const url = toUrl(href, base);
-    if (!url || !CONFRERIE_HOST_RE.test(url.hostname)) return null;
-    const match = url.pathname.match(/^\/([^/]+)\/mods\/(\d+)(?:\/|$)/i);
-    if (!match) return null;
-    return { site: "confrerie", game: match[1], modId: match[2], url: `${url.origin}${url.pathname}` };
-  }
-
   function parseAnyUrl(href, base) {
-    return parseModUrl(href, base) || parseMediaUrl(href, base) || parseConfrerieModUrl(href, base);
+    return parseModUrl(href, base) || parseMediaUrl(href, base);
   }
 
   function youtubeId(href) {
@@ -187,56 +176,16 @@
     return { title, url: pageUrl, items: src ? [{ type: "image", src, thumb: og || src, caption: title, pageUrl }] : [] };
   }
 
-  // La Confrérie mod page: full-size images under mods.confrerie-des-traducteurs.fr/.../images/big/
-  function parseConfreriePage(doc, pageUrl) {
-    const title = cleanTitle(doc.querySelector("h1")?.textContent || doc.title) || "Confrérie mod";
-    const images = [...doc.querySelectorAll("a[href*='/images/big/'], img[src*='/images/big/']")]
-      .map((node) => toUrl(node.getAttribute("href") || node.getAttribute("src"), pageUrl)?.href)
-      .filter((src) => src && /\.(?:jpe?g|png|webp|gif)$/i.test(src))
-      .map((src) => ({ type: "image", src, thumb: src, caption: "", pageUrl }));
-    const videos = [...doc.querySelectorAll("iframe[src], a[href*='youtu']")]
-      .map((node) => youtubeId(node.getAttribute("src") || node.getAttribute("href")))
-      .filter(Boolean)
-      .map((id) => video(id, title));
-    const nexus = [...doc.querySelectorAll("a[href*='nexusmods.com']")].map((a) => parseModUrl(a.href)).find(Boolean);
-
-    // "Prérequis" is an <h3> followed by a list; #prerequis itself only holds
-    // the credits ("Traduit par …", "Testé par …").
-    const heading = [...doc.querySelectorAll("h2, h3, h4, h5")].find((h) => /^pr[ée]requis$/i.test(textOf(h)));
-    const list = heading?.nextElementSibling?.matches("ul, ol") ? heading.nextElementSibling : null;
-    const requirements = [...(list?.children || [])].map((li) => {
-      const link = li.querySelector("a[href]");
-      const url = link ? toUrl(link.getAttribute("href"), pageUrl)?.href : null;
-      const name = textOf(li);
-      return name ? { name, url, offsite: Boolean(url) && !/nexusmods\.com|confrerie-des-traducteurs\.fr/.test(url) } : null;
-    }).filter(Boolean);
-
-    const original = [...doc.querySelectorAll("h3")].map(textOf).find((text) => /^mod original de /i.test(text));
-    return {
-      title,
-      url: pageUrl,
-      nexusUrl: nexus?.url || null,
-      summary: cleanText(doc.querySelector("meta[property='og:description'], meta[name='description']")?.content) || null,
-      requirements,
-      credits: [...doc.querySelectorAll("#prerequis li")].map(textOf).filter(Boolean),
-      version: textOf([...doc.querySelectorAll("h2")].find((h) => /^version\b/i.test(textOf(h)))).replace(/^version\s*/i, "").split(/\s+-\s+/)[0] || null,
-      originalAuthor: original ? original.replace(/^mod original de\s*/i, "") : null,
-      items: dedupe([...images, ...videos])
-    };
-  }
-
   globalThis.NexusMediaPreviewSources = {
     cleanText,
     cleanTitle,
     parseModUrl,
     parseMediaUrl,
-    parseConfrerieModUrl,
     parseAnyUrl,
     youtubeId,
     fullImageUrl,
     parseNexusModPage,
     parseNexusVideosTab,
-    parseNexusMediaPage,
-    parseConfreriePage
+    parseNexusMediaPage
   };
 })();

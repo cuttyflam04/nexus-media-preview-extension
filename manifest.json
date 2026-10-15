@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Nexus Mods Media Preview",
   "version": "2.0.0",
-  "description": "Adds quick media previews to Nexus Mods and La Confrerie des Traducteurs.",
+  "description": "Preview Nexus Mods screenshots, videos and media without leaving the page.",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -12,9 +12,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.nexusmods.com/*",
-        "https://www.confrerie-des-traducteurs.fr/*",
-        "https://confrerie-des-traducteurs.fr/*"
+        "https://www.nexusmods.com/*"
       ],
       "js": [
         "src/settings.js",
@@ -47,10 +45,7 @@
   ],
   "host_permissions": [
     "https://www.nexusmods.com/*",
-    "https://staticdelivery.nexusmods.com/*",
-    "https://www.confrerie-des-traducteurs.fr/*",
-    "https://confrerie-des-traducteurs.fr/*",
-    "https://mods.confrerie-des-traducteurs.fr/*"
+    "https://staticdelivery.nexusmods.com/*"
   ],
   "web_accessible_resources": [
     {
@@ -59,9 +54,7 @@
         "src/styles.css"
       ],
       "matches": [
-        "https://www.nexusmods.com/*",
-        "https://www.confrerie-des-traducteurs.fr/*",
-        "https://confrerie-des-traducteurs.fr/*"
+        "https://www.nexusmods.com/*"
       ]
     }
   ]

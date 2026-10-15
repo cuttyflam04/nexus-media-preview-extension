@@ -72,7 +72,7 @@ Tailwind class names are unstable: never select on them. Use `data-e2eid`.
 4. Search = same tiles; no "any input non-empty" heuristic needed.
 5. Still unknown: notifications panel (login needed), "last downloaded" text, La Confrérie.
 
-## La Confrérie des Traducteurs (checked 2026-10-15)
+## La Confrérie des Traducteurs (checked 2026-10-15, support dropped the same day)
 
 - Mod page `/skyrim/mods/{id}/{category}/{slug}` (`/skyrim/mods/{id}` redirects there).
 - Screenshots: slick slider inside `<header id="header">`, `a[href*='/images/big/']` on

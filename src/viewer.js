@@ -1,5 +1,5 @@
 // Preview UI: modal gallery, lightbox and link popover, all inside one shadow
-// root so neither Nexus nor La Confrérie styles can affect it.
+// root so Nexus styles cannot affect it.
 (() => {
   const ICONS = {
     prev: '<path d="m15 18-6-6 6-6"/>',

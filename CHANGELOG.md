@@ -2,7 +2,7 @@
 
 ## Version 2.0.0
 
-Complete rewrite, validated against the live Nexus Mods and La Confrérie pages in a real browser.
+Complete rewrite, validated against the live Nexus Mods pages in a real browser.
 
 - **No page scanning.** The 1.x content script rescanned the whole page on every DOM mutation (including its own), measuring every image and reading `textContent` up to `<body>`. 2.0 resolves targets lazily from the element under the pointer using Nexus's stable `data-e2eid` hooks. Measured on a 16 s browsing session of the top-mods list: about 1.1 s of extension CPU time in 1.13.19, about 1 ms in 2.0.
 - **One request per mod.** The mod page's own gallery already contains the full-size author images; the `?tab=images` request (whose list is loaded later by AJAX) is gone. Videos are fetched only when the mod has some.
@@ -12,10 +12,10 @@ Complete rewrite, validated against the live Nexus Mods and La Confrérie pages 
 - **Quick Look.** Press `Space` on a hovered or focused mod, media or link to open its preview; `Space` again closes it.
 - **Hover peek.** Resting on a mod card flips its picture through the mod's screenshots (can be turned off).
 - **Isolated UI.** The viewer lives in a shadow root: site styles cannot break it, and it cannot affect the site.
-- Works inside the Nexus quick-search dialog, on legacy mod pages (text links, requirements), and across sites: a Nexus link on La Confrérie previews the Nexus mod.
+- Works inside the Nexus quick-search dialog (including on legacy mod pages, where it lives in a shadow root), in notifications, and on legacy mod pages (text links, requirements).
 - Requirements now read Nexus's own "Nexus requirements" and "Off-site requirements" tables.
 - Adult-only mods show a clear message instead of an empty gallery when the session cannot see them.
-- Removed: grouped-notification heuristics, Vimeo/"Nexus video" links setting, and the 1.x size/class card guessing.
+- Removed: La Confrérie des Traducteurs support (Nexus Mods only), grouped-notification heuristics, Vimeo/"Nexus video" links setting, and the 1.x size/class card guessing.
 
 ## Version 1.13.19
 

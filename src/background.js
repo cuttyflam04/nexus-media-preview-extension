@@ -15,21 +15,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  if (message?.type === "nmp-fetch-page") {
-    if (!isAllowedPageUrl(message.url)) {
-      sendResponse({ ok: false, error: "Unsupported page." });
-      return false;
-    }
-    fetch(message.url, { credentials: "include" })
-      .then((response) => {
-        if (!response.ok) throw new Error(`The page answered ${response.status}.`);
-        return response.text();
-      })
-      .then((html) => sendResponse({ ok: true, html }))
-      .catch((error) => sendResponse({ ok: false, error: error.message }));
-    return true;
-  }
-
   if (message?.type === "nmp-fetch-image") {
     if (!isAllowedImageUrl(message.url)) {
       sendResponse({ ok: false, error: "Unsupported image source." });
@@ -56,20 +41,7 @@ function isAllowedImageUrl(rawUrl) {
     const url = new URL(rawUrl);
     return url.protocol === "https:" && (
       url.hostname === "www.nexusmods.com" ||
-      url.hostname === "staticdelivery.nexusmods.com" ||
-      url.hostname === "mods.confrerie-des-traducteurs.fr"
-    );
-  } catch {
-    return false;
-  }
-}
-
-function isAllowedPageUrl(rawUrl) {
-  try {
-    const url = new URL(rawUrl);
-    return url.protocol === "https:" && (
-      url.hostname === "www.nexusmods.com" ||
-      /^(?:www\.)?confrerie-des-traducteurs\.fr$/.test(url.hostname)
+      url.hostname === "staticdelivery.nexusmods.com"
     );
   } catch {
     return false;

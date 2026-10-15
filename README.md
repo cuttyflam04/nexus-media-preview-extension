@@ -1,6 +1,6 @@
 # Nexus Media Preview
 
-Preview a mod's screenshots, videos, description and requirements without leaving the page you are on — on Nexus Mods and on [La Confrérie des Traducteurs](https://www.confrerie-des-traducteurs.fr/skyrim).
+Preview a mod's screenshots, videos, description and requirements without leaving the Nexus Mods page you are on.
 
 ## Features
 
@@ -13,7 +13,6 @@ Preview a mod's screenshots, videos, description and requirements without leavin
 - **Browse without closing**: previous/next mod in the header (`Alt+←` / `Alt+→`) follows the cards on the page.
 - **Image actions**: copy, download, open in a new tab.
 - **Media pages**: on Media pages and profile Media tabs, the whole grid opens as one gallery without any extra request.
-- **La Confrérie**: previews from mod links and from the screenshot slider on mod pages, plus a link to the original Nexus mod, which can itself be previewed.
 
 ## Keyboard
 
