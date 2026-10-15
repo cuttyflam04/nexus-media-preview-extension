@@ -3,42 +3,79 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Nexus Mods Media Preview — Settings</title>
+    <title>Nexus Media Preview — Settings</title>
     <link rel="stylesheet" href="options.css">
   </head>
   <body>
-    <main class="settings-card">
-      <header>
-        <p class="eyebrow">Nexus Mods Media Preview</p>
-        <h1>Settings</h1>
-        <p class="intro">Customize the content and behavior of the preview window.</p>
-      </header>
+    <div class="page">
+      <aside class="identity">
+        <img class="logo" src="icons/icon-128.png" alt="" width="64" height="64">
+        <h1>Nexus Media Preview</h1>
+        <p class="version" data-version></p>
+        <p class="lede">Screenshots, videos and media posts from Nexus Mods, without leaving the page you are on. Changes save as you make them.</p>
 
-      <form id="settings-form">
-        <section>
-          <h2>Displayed content</h2>
-          <label class="setting-row"><span><strong>Description</strong><small>Show the mod summary.</small></span><input type="checkbox" name="showDescription"></label>
-          <label class="setting-row"><span><strong>Author</strong><small>Show the author link.</small></span><input type="checkbox" name="showAuthor"></label>
-          <label class="setting-row"><span><strong>Requirements</strong><small>Show required mods.</small></span><input type="checkbox" name="showRequirements"></label>
-          <label class="setting-row"><span><strong>YouTube videos</strong><small>Show embedded YouTube videos.</small></span><input type="checkbox" name="showYoutube"></label>
+      </aside>
+
+      <main>
+        <form id="settings-form">
+          <fieldset>
+            <legend>In the preview</legend>
+            <label class="row"><span class="text"><strong>Description</strong><small>The mod's short summary, or the media post's text.</small></span><input class="switch" type="checkbox" name="showDescription"></label>
+            <label class="row"><span class="text"><strong>Author</strong><small>Uploader chip linking to their profile.</small></span><input class="switch" type="checkbox" name="showAuthor"></label>
+            <label class="row"><span class="text"><strong>Requirements</strong><small>Nexus and off-site requirements; long lists start folded.</small></span><input class="switch" type="checkbox" name="showRequirements"></label>
+            <label class="row"><span class="text"><strong>YouTube videos</strong><small>The mod's videos below the gallery, and videos in media posts.</small></span><input class="switch" type="checkbox" name="showYoutube"></label>
+            <label class="row"><span class="text"><strong>Image actions</strong><small>Copy, download and open-in-tab buttons on the picture.</small></span><input class="switch" type="checkbox" name="showActionButtons"></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>On Nexus pages</legend>
+            <label class="row"><span class="text"><strong>Hover peek</strong><small>A mod card flips through its screenshots while you rest on it. Off when your system asks for reduced motion.</small></span><input class="switch" type="checkbox" name="hoverPeek"></label>
+            <label class="row"><span class="text"><strong>Keyboard shortcuts</strong><small>Space, plus the keys in the Keyboard list.</small></span><input class="switch" type="checkbox" name="keyboardShortcuts"></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Opening</legend>
+            <div class="row stacked">
+              <span class="text" id="open-mode-label"><strong>The camera button opens</strong><small>Where a mod or media goes when you preview it.</small></span>
+              <div class="segmented" role="radiogroup" aria-labelledby="open-mode-label">
+                <label><input type="radio" name="openMode" value="modal"><span>Preview</span></label>
+                <label><input type="radio" name="openMode" value="new-tab"><span>New tab</span></label>
+                <label><input type="radio" name="openMode" value="same-tab"><span>This tab</span></label>
+              </div>
+            </div>
+            <div class="row stacked">
+              <span class="text" id="width-label"><strong>Preview width</strong><small>Compact hides the side panel. Media posts always open full screen.</small></span>
+              <div class="segmented" role="radiogroup" aria-labelledby="width-label">
+                <label><input type="radio" name="modalWidth" value="compact"><span>Compact</span></label>
+                <label><input type="radio" name="modalWidth" value="normal"><span>Normal</span></label>
+                <label><input type="radio" name="modalWidth" value="wide"><span>Wide</span></label>
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="actions">
+            <button type="button" id="reset-settings">Reset to defaults</button>
+            <span id="save-status" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+      </main>
+
+      <aside class="more">
+        <section class="keys" aria-labelledby="keys-title">
+          <h2 id="keys-title">Keyboard</h2>
+          <dl>
+            <div><dt><kbd>Space</kbd></dt><dd>Preview what is under the pointer, or close</dd></div>
+            <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Previous / next screenshot</dd></div>
+            <div><dt><kbd>Alt</kbd> + <kbd>←</kbd> <kbd>→</kbd></dt><dd>Previous / next mod on the page</dd></div>
+            <div><dt><kbd>Enter</kbd></dt><dd>Full size view</dd></div>
+            <div><dt><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd></dt><dd>Zoom in the full size view</dd></div>
+            <div><dt><kbd>Esc</kbd></dt><dd>Close the full size view, then the preview</dd></div>
+          </dl>
         </section>
 
-        <section>
-          <h2>Interface</h2>
-          <label class="setting-row"><span><strong>Action buttons</strong><small>Copy, download, and open the image.</small></span><input type="checkbox" name="showActionButtons"></label>
-          <label class="setting-row"><span><strong>Hover peek</strong><small>Flip through a mod's screenshots while hovering its card.</small></span><input type="checkbox" name="hoverPeek"></label>
-          <label class="setting-row"><span><strong>Keyboard shortcuts</strong><small>Space to preview what is under the pointer; arrows, zoom and Escape in the viewer.</small></span><input type="checkbox" name="keyboardShortcuts"></label>
-          <label class="select-row"><span><strong>Opening mode</strong><small>Choose what happens when a card is clicked.</small></span><select name="openMode"><option value="modal">Embedded window</option><option value="new-tab">New tab</option><option value="same-tab">Current tab</option></select></label>
-          <label class="select-row"><span><strong>Preview width</strong><small>Adjust the gallery width.</small></span><select name="modalWidth"><option value="compact">Compact</option><option value="normal">Normal</option><option value="wide">Wide</option></select></label>
-        </section>
-
-        <footer>
-          <button type="button" id="reset-settings" class="secondary">Reset to defaults</button>
-          <span id="save-status" role="status" aria-live="polite"></span>
-          <p class="support-note">If this extension helps, you can <a data-kofi-link hidden target="_blank" rel="noreferrer noopener">support its development</a>.</p>
-        </footer>
-      </form>
-    </main>
+        <p class="support-note">If this extension helps, you can <a data-kofi-link hidden target="_blank" rel="noreferrer noopener">support its development</a>.</p>
+      </aside>
+    </div>
     <script src="src/settings.js"></script>
     <script src="options.js"></script>
   </body>

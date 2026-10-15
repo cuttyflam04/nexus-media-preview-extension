@@ -12,6 +12,9 @@
     kofiLink.hidden = false;
   }
 
+  const version = document.querySelector("[data-version]");
+  if (version && globalThis.chrome?.runtime?.getManifest) version.textContent = `Version ${chrome.runtime.getManifest().version}`;
+
   const keys = Object.keys(api.defaults);
 
   function readForm() {
