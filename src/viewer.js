@@ -50,7 +50,12 @@
               <span class="counter"></span>
               <span class="status" role="status" aria-live="polite"></span>
             </div>
-            <div class="strip" aria-label="Media"></div>
+            <div class="strip" aria-label="Screenshots"></div>
+            <section class="videos" hidden>
+              <h3>YouTube <span class="video-count"></span></h3>
+              <div class="player" hidden></div>
+              <div class="video-grid"></div>
+            </section>
           </div>
           <aside class="side"></aside>
         </section>
@@ -77,6 +82,10 @@
     const chips = $(".chips");
     const stage = $(".stage");
     const strip = $(".strip");
+    const main = $(".main");
+    const videoSection = $(".videos");
+    const videoGrid = $(".video-grid");
+    const player = $(".player");
     const side = $(".side");
     const counter = $(".counter");
     const status = $(".status");
@@ -85,6 +94,8 @@
     const popover = $(".popover");
 
     let items = [];
+    let videos = [];
+    let dataEmpty = {};
     let index = 0;
     let canNavigate = false;
     let itemTitles = false;
@@ -142,43 +153,58 @@
       if (summary && summary.scrollHeight > summary.clientHeight + 2) side.querySelector(".more").hidden = false;
     }
 
-    function visibleItems(list) {
-      return getSettings().showYoutube ? list : list.filter((item) => item.type !== "video");
-    }
-
     function renderStrip() {
       strip.hidden = items.length < 2;
       strip.innerHTML = items.map((item, i) => `
-        <button class="thumb" type="button" data-index="${i}" aria-label="${item.type === "video" ? "Video" : "Image"} ${i + 1}">
+        <button class="thumb" type="button" data-index="${i}" aria-label="Image ${i + 1}">
           <img src="${escapeHtml(item.thumb || item.src)}" alt="" loading="lazy">
-          ${item.type === "video" ? `<span class="play">${icon("play")}</span>` : ""}
         </button>`).join("");
+    }
+
+    // Videos live in their own section under the gallery, so arrow keys and
+    // the counter only walk through screenshots.
+    function renderVideos() {
+      videoSection.hidden = !videos.length;
+      videoSection.querySelector(".video-count").textContent = videos.length;
+      player.hidden = true;
+      player.innerHTML = "";
+      videoGrid.innerHTML = videos.map((video, i) => `
+        <button class="video-card" type="button" data-video="${i}" aria-label="Play ${escapeHtml(video.title)}">
+          <span class="video-thumb"><img src="${escapeHtml(video.thumb)}" alt="" loading="lazy"><span class="play">${icon("play")}</span></span>
+          <span class="video-title">${escapeHtml(video.title)}</span>
+        </button>`).join("");
+    }
+
+    function playVideo(i, reveal = false) {
+      const video = videos[i];
+      if (!video) return;
+      player.hidden = false;
+      player.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${escapeHtml(video.id)}?autoplay=1" title="${escapeHtml(video.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+      videoGrid.querySelectorAll(".video-card").forEach((card) => card.classList.toggle("is-active", Number(card.dataset.video) === i));
+      if (reveal) {
+        // Scroll the main column only (scrollIntoView would also move the page).
+        main.scrollTop += videoSection.getBoundingClientRect().top - main.getBoundingClientRect().top - 12;
+      }
     }
 
     function show(i) {
       if (!items.length) return;
       index = (i + items.length) % items.length;
       const item = items[index];
-      stage.classList.toggle("is-video", item.type === "video");
-      if (item.type === "video") {
-        stage.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${escapeHtml(item.id)}?autoplay=1" title="${escapeHtml(item.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
-      } else {
-        stage.innerHTML = `<img class="is-loading" alt="${escapeHtml(item.caption || "")}">`;
-        const img = stage.firstElementChild;
-        img.onload = img.onerror = () => img.classList.remove("is-loading");
-        img.src = item.src;
-        // Warm the neighbours so arrow navigation feels instant.
-        for (const near of [items[index + 1], items[index - 1]]) {
-          if (near?.type === "image") new Image().src = near.src;
-        }
-      }
+      stage.classList.remove("is-video");
+      stage.innerHTML = `<img class="is-loading" alt="${escapeHtml(item.caption || "")}">`;
+      const img = stage.firstElementChild;
+      img.onload = img.onerror = () => img.classList.remove("is-loading");
+      img.src = item.src;
+      // Warm the neighbours so arrow navigation feels instant.
+      for (const near of [items[index + 1], items[index - 1]]) if (near) new Image().src = near.src;
       counter.textContent = `${index + 1} / ${items.length}`;
       if (itemTitles) {
-        title.textContent = item.caption || item.title || "Nexus media";
+        title.textContent = item.caption || "Nexus media";
         title.href = item.pageUrl || title.href;
       }
       root.querySelectorAll(".arrow").forEach((arrow) => { arrow.hidden = items.length < 2; });
-      $(".tools").hidden = item.type !== "image" || !getSettings().showActionButtons;
+      $(".tools").hidden = !getSettings().showActionButtons;
       strip.querySelectorAll(".thumb").forEach((thumb) => thumb.classList.toggle("is-active", Number(thumb.dataset.index) === index));
       // Scroll the strip only: scrollIntoView() would also scroll the page behind the modal.
       const active = strip.querySelector(".thumb.is-active");
@@ -201,6 +227,11 @@
       root.querySelectorAll(".modal .arrow").forEach((arrow) => { arrow.hidden = true; });
     }
 
+    function renderNoImages() {
+      if (videos.length) renderEmpty("No screenshots", "This one only has videos, right below.");
+      else renderEmpty(dataEmpty.message || "No media found", dataEmpty.detail, dataEmpty.url);
+    }
+
     function setStatus(text) {
       status.textContent = text;
       clearTimeout(statusTimer);
@@ -221,6 +252,9 @@
       title.href = entry.url || "#";
       renderChips(entry.chips);
       items = [];
+      videos = [];
+      renderVideos();
+      main.scrollTop = 0;
       stage.classList.add("is-video");
       stage.innerHTML = '<div class="spinner" role="status" aria-label="Loading"></div>';
       strip.innerHTML = "";
@@ -241,22 +275,28 @@
       if (data.chips) renderChips(data.chips);
       renderSide(data);
       itemTitles = Boolean(data.itemTitles);
-      items = visibleItems(data.items || []);
-      if (!items.length) {
-        renderEmpty(data.emptyMessage || "No media found", data.emptyDetail, data.url);
-        return;
+      dataEmpty = { message: data.emptyMessage, detail: data.emptyDetail, url: data.url };
+      const all = data.items || [];
+      items = all.filter((item) => item.type === "image");
+      videos = getSettings().showYoutube ? all.filter((item) => item.type === "video") : [];
+      renderVideos();
+      const start = all[data.startIndex || 0];
+      if (items.length) {
+        renderStrip();
+        show(start?.type === "image" ? items.indexOf(start) : 0);
+      } else {
+        renderNoImages();
       }
-      renderStrip();
-      show(data.startIndex || 0);
+      if (start?.type === "video" && videos.includes(start)) playVideo(videos.indexOf(start), true);
     }
 
     function appendItems(extra) {
-      const more = visibleItems(extra).filter((item) => !items.some((known) => known.type === item.type && (known.id || known.src) === (item.id || item.src)));
+      if (!getSettings().showYoutube) return;
+      const more = extra.filter((item) => item.type === "video" && !videos.some((known) => known.id === item.id));
       if (!more.length) return;
-      const wasEmpty = !items.length;
-      items = [...items, ...more];
-      renderStrip();
-      show(wasEmpty ? 0 : index);
+      videos = [...videos, ...more];
+      renderVideos();
+      if (!items.length) renderNoImages();
     }
 
     function fail(message, url) {
@@ -268,6 +308,7 @@
       if (modal.hidden) return;
       closeLightbox();
       stage.innerHTML = "";
+      player.innerHTML = "";
       modal.hidden = true;
       document.documentElement.style.overflow = savedOverflow;
       onClose?.();
@@ -332,6 +373,8 @@
     root.addEventListener("click", (event) => {
       const thumb = event.target.closest(".thumb");
       if (thumb) return show(Number(thumb.dataset.index));
+      const card = event.target.closest(".video-card");
+      if (card) return playVideo(Number(card.dataset.video), true);
       const action = event.target.closest("[data-act]")?.dataset.act;
       const item = items[index];
       switch (action) {

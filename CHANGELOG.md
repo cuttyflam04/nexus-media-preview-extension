@@ -6,7 +6,8 @@ Complete rewrite, validated against the live Nexus Mods and La Confrérie pages 
 
 - **No page scanning.** The 1.x content script rescanned the whole page on every DOM mutation (including its own), measuring every image and reading `textContent` up to `<body>`. 2.0 resolves targets lazily from the element under the pointer using Nexus's stable `data-e2eid` hooks. Measured on a 16 s browsing session of the top-mods list: about 1.1 s of extension CPU time in 1.13.19, about 1 ms in 2.0.
 - **One request per mod.** The mod page's own gallery already contains the full-size author images; the `?tab=images` request (whose list is loaded later by AJAX) is gone. Videos are fetched only when the mod has some.
-- **Videos inside the gallery.** YouTube videos are thumbnails in the same strip as images and play in the main stage.
+- **Videos below the gallery.** Screenshots stay first: arrows, counter and full-size view only walk images, and the mod's YouTube videos sit in their own section underneath with an inline player.
+- Portrait screenshots are letterboxed instead of cropped.
 - **Media grids need no request.** On Media pages and profile Media tabs, thumbnails map directly to full-size images; the whole grid becomes one gallery.
 - **Quick Look.** Press `Space` on a hovered or focused mod, media or link to open its preview; `Space` again closes it.
 - **Hover peek.** Resting on a mod card flips its picture through the mod's screenshots (can be turned off).

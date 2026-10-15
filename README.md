@@ -8,7 +8,7 @@ Preview a mod's screenshots, videos, description and requirements without leavin
 - **Quick Look**: hover a mod, a media card or a mod link and press `Space`. Press `Space` again to close.
 - **Hover peek**: rest the pointer on a mod card and its picture flips through the mod's screenshots.
 - **Link popover**: hovering a link to a mod or a Nexus image/video shows a small *Preview* button.
-- **One gallery for everything**: images and YouTube videos side by side, full-size lightbox with wheel zoom, drag-to-pan and double-click zoom.
+- **Screenshots first**: gallery and full-size lightbox (wheel zoom, drag-to-pan, double-click zoom) for images; the mod's YouTube videos sit in their own section below.
 - **Mod details**: author, downloads, endorsements, short description, Nexus and off-site requirements, and your last download date when Nexus shows it.
 - **Browse without closing**: previous/next mod in the header (`Alt+←` / `Alt+→`) follows the cards on the page.
 - **Image actions**: copy, download, open in a new tab.
@@ -20,7 +20,7 @@ Preview a mod's screenshots, videos, description and requirements without leavin
 | Key | Action |
 |---|---|
 | `Space` | Open the preview of what is under the pointer / close it |
-| `←` `→` | Previous / next image or video |
+| `←` `→` | Previous / next screenshot |
 | `Alt+←` `Alt+→` | Previous / next mod on the page |
 | `Enter` | Open the current image full size |
 | `+` `-` `0` | Zoom in / out / reset (full size view) |
