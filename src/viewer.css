@@ -124,10 +124,20 @@ a.chip:hover { color: var(--text); }
   background: #0d0e11 radial-gradient(circle at 50% 40%, #1d1e25, #0d0e11 70%);
   overflow: hidden;
 }
+/* Blurred, dimmed copy of the current picture: fills the empty sides of
+   portrait (and letterboxed) screenshots instead of flat black. */
+.stage-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -40px;
+  background: var(--stage-bg, none) center / cover no-repeat;
+  filter: blur(28px) saturate(1.15) brightness(0.42);
+  transition: background-image 0.25s;
+}
 .stage { all: unset; position: relative; display: grid; place-items: center; width: 100%; height: 100%; cursor: zoom-in; }
 /* Pin the image to the stage box and let object-fit letterbox it: a percentage
    height does not resolve inside the <button> stage, which cropped portraits. */
-.stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transition: opacity 0.2s; }
+.stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.55)); transition: opacity 0.2s; }
 .stage img.is-loading { opacity: 0.25; }
 .stage iframe { width: 100%; height: 100%; border: 0; }
 .stage.is-video { cursor: default; }

@@ -83,6 +83,7 @@
     const chips = $(".chips");
     const stage = $(".stage");
     const strip = $(".strip");
+    const stageWrap = $(".stage-wrap");
     const main = $(".main");
     const videoSection = $(".videos");
     const videoGrid = $(".video-grid");
@@ -201,6 +202,8 @@
       const img = stage.firstElementChild;
       img.onload = img.onerror = () => img.classList.remove("is-loading");
       img.src = item.src;
+      // Blurred copy behind the picture fills the letterbox (portraits).
+      stageWrap.style.setProperty("--stage-bg", `url(${JSON.stringify(item.thumb || item.src)})`);
       // Warm the neighbours so arrow navigation feels instant.
       for (const near of [items[index + 1], items[index - 1]]) if (near) new Image().src = near.src;
       counter.textContent = `${index + 1} / ${items.length}`;
@@ -223,6 +226,7 @@
 
     function renderEmpty(message, detail, url) {
       items = [];
+      stageWrap.style.removeProperty("--stage-bg");
       stage.classList.add("is-video");
       stage.innerHTML = `<div class="empty"><strong>${escapeHtml(message)}</strong>${detail ? `<span>${escapeHtml(detail)}</span>` : ""}${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">Open the page</a>` : ""}</div>`;
       strip.innerHTML = "";
@@ -261,6 +265,7 @@
       renderVideos();
       main.scrollTop = 0;
       stage.classList.add("is-video");
+      stageWrap.style.removeProperty("--stage-bg");
       stage.innerHTML = '<div class="spinner" role="status" aria-label="Loading"></div>';
       strip.innerHTML = "";
       counter.textContent = "";
