@@ -16,12 +16,13 @@
     play: '<path d="M8 5v14l11-7Z"/>',
     chevron: '<path d="m6 9 6 6 6-6"/>',
     eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
-    calendar: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>'
+    calendar: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>',
+    posts: '<path d="M4 5h16v11H8l-4 4Z"/>'
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-  function create({ cssUrl, getSettings, onNavigate, onClose, onPopoverClick, actions }) {
+  function create({ cssUrl, getSettings, onNavigate, onClose, onPopoverClick, onPosts, actions }) {
     const host = document.createElement("nmp-root");
     const root = host.attachShadow({ mode: "open" });
     root.innerHTML = `
@@ -62,6 +63,14 @@
           </div>
           <aside class="side"></aside>
         </section>
+        <section class="posts" role="complementary" aria-label="Posts" tabindex="-1" hidden>
+          <header class="posts-head">
+            <h3>Posts <span class="posts-count"></span></h3>
+            <a class="posts-open" target="_blank" rel="noreferrer">Open on Nexus</a>
+            <button class="icon-button" type="button" data-act="close-posts" aria-label="Close posts" title="Close posts (Esc)">${icon("close")}</button>
+          </header>
+          <div class="posts-body"></div>
+        </section>
       </div>
       <div class="lightbox" role="dialog" aria-modal="true" aria-label="Full size image" tabindex="-1" hidden>
         <img alt="">
@@ -96,6 +105,8 @@
     const lightbox = $(".lightbox");
     const lbImage = lightbox.querySelector("img");
     const popover = $(".popover");
+    const postsCard = $(".posts");
+    const postsBody = $(".posts-body");
 
     let items = [];
     let videos = [];
@@ -107,6 +118,9 @@
     // Cinema mode (Nexus media posts): images and videos share the stage and
     // the strip, and the side panel describes the current post.
     let cinema = null;
+    // Posts card: which mod it shows, threads already rendered, paging.
+    let posts = null;
+    let shiftedForPosts = false;
     let zoom = { scale: 1, x: 0, y: 0 };
     let statusTimer = 0;
     let savedOverflow = "";
@@ -115,6 +129,8 @@
 
     const drag = globalThis.NexusMediaPreviewModalDrag;
     drag?.attach(dialog, $(".header"));
+    new MutationObserver(() => placePosts()).observe(dialog, { attributes: true, attributeFilter: ["style"] });
+    window.addEventListener("resize", () => placePosts());
     // Mount right away so the shadow stylesheet is loaded before the first
     // popover has to be measured.
     document.body.append(host);
@@ -156,7 +172,9 @@
         }</li>`).join("")}</ul></details>`);
       }
       if (data.links?.length) {
-        parts.push(`<section><h3>Open</h3><div class="links">${data.links.map((link) => `<a href="${escapeHtml(link.url)}" target="${link.newTab === false ? "_self" : "_blank"}" rel="noreferrer">${escapeHtml(link.label)}</a>`).join("")}</div></section>`);
+        parts.push(`<section><h3>Open</h3><div class="links">${data.links.map((link) => link.action === "posts"
+          ? `<button type="button" data-act="posts" aria-expanded="${!postsCard.hidden}">${icon("posts")}${escapeHtml(link.label)}</button>`
+          : `<a href="${escapeHtml(link.url)}" target="${link.newTab === false ? "_self" : "_blank"}" rel="noreferrer">${escapeHtml(link.label)}</a>`).join("")}</div></section>`);
       }
       side.innerHTML = parts.join("");
       side.querySelector(".requirements")?.addEventListener("toggle", (event) => { requirementsOpen = event.target.open; });
@@ -267,6 +285,100 @@
       }
     }
 
+    // ---------- Posts card ----------
+    function renderPost(post, author) {
+      const isAuthor = author && post.name.toLowerCase() === author.toLowerCase();
+      const badge = post.sticky ? '<span class="badge is-pinned">Pinned</span>' : isAuthor ? '<span class="badge is-author">Author</span>' : "";
+      const replies = post.replies?.length
+        ? `<button class="replies-toggle" type="button" data-act="replies" aria-expanded="false">${post.replies.length} ${post.replies.length === 1 ? "reply" : "replies"}</button>
+           <ol class="replies" hidden>${post.replies.map((reply) => `<li>${renderPost(reply, author)}</li>`).join("")}</ol>`
+        : "";
+      return `<article class="post${post.sticky ? " is-sticky" : ""}${isAuthor ? " is-author" : ""}">
+        <header>
+          ${post.avatar ? `<img class="avatar" src="${escapeHtml(post.avatar)}" alt="" loading="lazy">` : '<span class="avatar"></span>'}
+          <span class="who">${post.url ? `<a href="${escapeHtml(post.url)}" target="_blank" rel="noreferrer">${escapeHtml(post.name)}</a>` : escapeHtml(post.name)}${badge}</span>
+          <time>${escapeHtml(post.date || "")}</time>
+        </header>
+        <p class="post-text">${escapeHtml(post.text || "")}</p>
+        <button class="more" type="button" data-act="post-more" hidden>Show more</button>
+        ${replies}
+      </article>`;
+    }
+
+    function markLongPosts(scope) {
+      scope.querySelectorAll(".post-text").forEach((text) => {
+        const more = text.nextElementSibling;
+        if (more?.dataset.act === "post-more") more.hidden = text.scrollHeight <= text.clientHeight + 2;
+      });
+    }
+
+    function placePosts(allowShift = false) {
+      if (postsCard.hidden) return;
+      const gap = 12;
+      const margin = 16;
+      const width = Math.min(400, window.innerWidth - margin * 2);
+      let box = dialog.getBoundingClientRect();
+      // Make room on the right by sliding the preview left when the pair fits.
+      if (allowShift && window.innerWidth - box.right - margin < width + gap && box.width + gap + width <= window.innerWidth - margin * 2) {
+        dialog.style.left = `${Math.round((window.innerWidth - box.width - gap - width) / 2)}px`;
+        dialog.style.top = `${Math.round(box.top)}px`;
+        dialog.style.transform = "none";
+        shiftedForPosts = true;
+        box = dialog.getBoundingClientRect();
+      }
+      const beside = window.innerWidth - box.right - margin >= width + gap;
+      postsCard.classList.toggle("is-overlay", !beside);
+      postsCard.style.width = `${width}px`;
+      postsCard.style.top = `${Math.round(beside ? box.top : box.top + 8)}px`;
+      postsCard.style.height = `${Math.round(beside ? box.height : box.height - 16)}px`;
+      postsCard.style.left = `${Math.round(beside ? box.right + gap : box.right - width - 8)}px`;
+    }
+
+    function openPosts(info) {
+      posts = { key: info.key, author: info.author || null, seen: new Set(), loading: true };
+      postsCard.hidden = false;
+      postsCard.querySelector(".posts-count").textContent = info.total ? info.total.toLocaleString("en") : "";
+      const open = postsCard.querySelector(".posts-open");
+      open.href = info.url;
+      postsBody.innerHTML = '<div class="spinner" role="status" aria-label="Loading posts"></div>';
+      side.querySelector("[data-act='posts']")?.setAttribute("aria-expanded", "true");
+      placePosts(true);
+    }
+
+    function addPosts(key, data) {
+      if (!posts || posts.key !== key) return;
+      posts.loading = false;
+      if (data.total) postsCard.querySelector(".posts-count").textContent = data.total.toLocaleString("en");
+      const fresh = data.threads.filter((thread) => !posts.seen.has(thread.id));
+      fresh.forEach((thread) => posts.seen.add(thread.id));
+      postsBody.querySelector(".spinner")?.remove();
+      postsBody.querySelector(".load-more")?.remove();
+      if (!posts.seen.size) {
+        postsBody.innerHTML = '<div class="empty"><strong>No posts yet</strong></div>';
+        return;
+      }
+      postsBody.insertAdjacentHTML("beforeend", fresh.map((thread) => renderPost(thread, posts.author)).join(""));
+      if (data.hasMore) postsBody.insertAdjacentHTML("beforeend", '<button class="load-more" type="button" data-act="more-posts">Load more</button>');
+      markLongPosts(postsBody);
+    }
+
+    function failPosts(key, message) {
+      if (!posts || posts.key !== key) return;
+      postsBody.querySelector(".spinner")?.remove();
+      postsBody.querySelector(".load-more")?.remove();
+      postsBody.insertAdjacentHTML("beforeend", `<div class="empty"><strong>Could not load posts</strong><span>${escapeHtml(message)}</span></div>`);
+    }
+
+    function closePosts() {
+      if (postsCard.hidden) return;
+      postsCard.hidden = true;
+      postsBody.innerHTML = "";
+      posts = null;
+      side.querySelector("[data-act='posts']")?.setAttribute("aria-expanded", "false");
+      if (shiftedForPosts) drag?.reset(dialog);
+      shiftedForPosts = false;
+    }
+
     function renderEmpty(message, detail, url) {
       items = [];
       stageWrap.style.removeProperty("--stage-bg");
@@ -299,6 +411,7 @@
       modal.dataset.width = settings.modalWidth;
       if (modal.hidden) drag?.reset(dialog);
       cinema = null;
+      if (entry.mode === "cinema") closePosts();
       dialog.classList.toggle("cinema", entry.mode === "cinema");
       canNavigate = Boolean(entry.canNavigate);
       $("[data-act='prev-mod']").parentElement.hidden = !canNavigate;
@@ -375,6 +488,7 @@
     function close() {
       if (modal.hidden) return;
       closeLightbox();
+      closePosts();
       stage.innerHTML = "";
       player.innerHTML = "";
       modal.hidden = true;
@@ -456,6 +570,17 @@
         case "prev": return show(index - 1);
         case "next": return show(index + 1);
         case "prev-mod": return onNavigate?.(-1);
+        case "posts": return postsCard.hidden ? onPosts?.("open") : closePosts();
+        case "close-posts": return closePosts();
+        case "more-posts": event.target.disabled = true; event.target.textContent = "Loading…"; return onPosts?.("more", posts?.key);
+        case "post-more": event.target.previousElementSibling.classList.add("is-open"); event.target.remove(); return;
+        case "replies": {
+          const list = event.target.nextElementSibling;
+          list.hidden = !list.hidden;
+          event.target.setAttribute("aria-expanded", String(!list.hidden));
+          if (!list.hidden) markLongPosts(list);
+          return;
+        }
         case "next-mod": return onNavigate?.(1);
         case "zoom": return openLightbox();
         case "more": side.querySelector(".summary").classList.add("is-open"); event.target.remove(); return;
@@ -479,12 +604,14 @@
       const key = event.key;
       // Focus containment is not a shortcut: it applies even with shortcuts off.
       if (key === "Tab") {
-        trapTab(event, inLightbox ? lightbox : dialog);
+        const inPosts = !postsCard.hidden && postsCard.contains(root.activeElement);
+        trapTab(event, inLightbox ? lightbox : inPosts ? postsCard : dialog);
         return;
       }
       if (!getSettings().keyboardShortcuts) return;
+      if (!postsCard.hidden && postsCard.contains(root.activeElement) && key !== "Escape") return;
       let handled = true;
-      if (key === "Escape") inLightbox ? closeLightbox() : close();
+      if (key === "Escape") inLightbox ? closeLightbox() : !postsCard.hidden ? closePosts() : close();
       else if (event.altKey && key === "ArrowLeft" && canNavigate) onNavigate?.(-1);
       else if (event.altKey && key === "ArrowRight" && canNavigate) onNavigate?.(1);
       else if (key === "ArrowLeft") show(index - 1);
@@ -571,6 +698,11 @@
       scheduleHidePopover,
       hidePopover,
       get isOpen() { return !modal.hidden; },
+      get postsOpen() { return !postsCard.hidden; },
+      openPosts,
+      addPosts,
+      failPosts,
+      closePosts,
       get popoverAnchor() { return popoverAnchor; },
       setInlineCss(css) { const style = root.querySelector("style[data-nmp-inline]"); if (style) style.textContent = css; }
     };

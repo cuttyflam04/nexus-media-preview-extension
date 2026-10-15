@@ -146,6 +146,8 @@
       url: mod.url,
       summary: globalThis.NexusMediaPreviewDescription?.extract(doc, title) || null,
       author,
+      // Account name that answers in the Posts tab.
+      uploader: textOf(uploader) || null,
       requirements,
       lastDownload,
       videoCount,
@@ -195,6 +197,56 @@
     return { ...details, url: pageUrl, items: src ? [{ type: "image", src, thumb: og || src, caption: title, pageUrl }] : [] };
   }
 
+  // Mod posts. The ?tab=posts page renders the first page of threads; later
+  // pages come from the CommentContainer widget whose parameters sit in an
+  // inline RequestHelper script of that same page.
+  function commentText(node) {
+    if (!node) return "";
+    const copy = node.cloneNode(true);
+    copy.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
+    copy.querySelectorAll("p, div, li, blockquote").forEach((block) => block.append("\n"));
+    return String(copy.textContent || "").replace(/\u00a0/g, " ").replace(/Spoiler:\s*Show\s*/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  }
+
+  function parseComment(li) {
+    const nameLink = li.querySelector(":scope > .comment-head .comment-name a");
+    return {
+      id: li.id.replace(/^comment-/, ""),
+      name: textOf(nameLink) || "Someone",
+      url: nameLink?.href || null,
+      avatar: li.querySelector(":scope > .comment-head .comment-user img")?.getAttribute("src") || null,
+      role: textOf(li.querySelector(":scope > .comment-head .comment-details ul li")) || null,
+      date: textOf(li.querySelector(":scope > .comment-content time")) || null,
+      sticky: li.classList.contains("comment-sticky"),
+      text: commentText(li.querySelector(":scope > .comment-content .comment-content-text"))
+    };
+  }
+
+  function parseNexusPosts(doc) {
+    const threads = [...doc.querySelectorAll("li.comment")]
+      .filter((li) => !li.parentElement.closest("li.comment"))
+      .map((li) => ({
+        ...parseComment(li),
+        replies: [...li.querySelectorAll(":scope > .comment-kids > li.comment, :scope ol.comment-kids > li.comment")]
+          .filter((kid, index, list) => list.indexOf(kid) === index)
+          .map(parseComment)
+      }));
+    const pages = [...doc.querySelectorAll(".pagination a, .pagination li")]
+      .map((node) => Number(textOf(node)))
+      .filter(Number.isFinite);
+    let widget = null;
+    for (const script of doc.querySelectorAll("script")) {
+      const code = script.textContent || "";
+      const match = code.match(/RH\.uri = '([^']*CommentContainer)';[\s\S]*?RH\.out_items = JSON\.parse\("((?:[^"\\]|\\.)*)"\)/);
+      if (match) {
+        try { widget = { uri: match[1], params: JSON.parse(JSON.parse(`"${match[2]}"`)) }; } catch { widget = null; }
+        break;
+      }
+    }
+    const total = Number(textOf(doc.querySelector("#mod-page-tab-posts")).replace(/\D/g, "")) || null;
+    return { threads, total, pageCount: pages.length ? Math.max(...pages) : 1, widget };
+  }
+
   function dedupeBy(list, key) {
     const seen = new Set();
     return list.filter((entry) => !seen.has(key(entry)) && seen.add(key(entry)));
@@ -210,6 +262,7 @@
     fullImageUrl,
     parseNexusModPage,
     parseNexusVideosTab,
-    parseNexusMediaPage
+    parseNexusMediaPage,
+    parseNexusPosts
   };
 })();

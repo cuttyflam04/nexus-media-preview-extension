@@ -55,6 +55,16 @@
 
   const loadMod = (mod) => cached(mod.url, async () => sources.parseNexusModPage(await fetchDocument(mod.url), mod));
   const loadVideos = (mod) => cached(`${mod.url}#videos`, async () => sources.parseNexusVideosTab(await fetchDocument(`${mod.url}?tab=videos`)));
+  const loadPosts = (mod) => cached(`${mod.url}#posts`, async () => sources.parseNexusPosts(await fetchDocument(`${mod.url}?tab=posts`)));
+
+  async function loadPostsPage(widget, page) {
+    const params = { ...widget.params, page };
+    const query = new URLSearchParams({ RH_CommentContainer: Object.entries(params).map(([key, value]) => `${key}:${value}`).join(",") });
+    const response = await fetch(`${widget.uri}?${query}`, { credentials: "include", headers: { "X-Requested-With": "XMLHttpRequest" } });
+    if (!response.ok) throw new Error(`The page answered ${response.status}.`);
+    return sources.parseNexusPosts(new DOMParser().parseFromString(await response.text(), "text/html"));
+  }
+
   const loadMedia = (link) => cached(link.url, async () => sources.parseNexusMediaPage(await fetchDocument(link.url), link.url));
 
   // ---------- Targets ----------
@@ -132,6 +142,7 @@
     getSettings: () => settings,
     onNavigate: navigate,
     onClose: () => { current = null; },
+    onPosts: (command) => (command === "more" ? morePosts() : showPosts()),
     onPopoverClick: (anchor) => {
       const target = resolveTarget(anchor);
       if (target) openTarget(target);
@@ -232,9 +243,10 @@
           { label: "Files", url: `${link.url}?tab=files` },
           { label: "All images", url: `${link.url}?tab=images` },
           ...(data.videoCount ? [{ label: `Videos (${data.videoCount})`, url: `${link.url}?tab=videos` }] : []),
-          { label: "Posts", url: `${link.url}?tab=posts` }
+          { label: "Posts", action: "posts", url: `${link.url}?tab=posts` }
         ]
       });
+      if (viewer.postsOpen) showPosts();
       if (settings.showYoutube && data.videoCount) {
         const videos = await loadVideos(link);
         if (token === openToken) viewer.appendItems(videos);
@@ -287,6 +299,39 @@
       viewer.update({ mode: "cinema", items, itemTitles: true, url: link.url, describe: describeMedia, emptyMessage: "No media found" });
     } catch (error) {
       if (token === openToken) viewer.fail(error.message, link.url);
+    }
+  }
+
+  // ---------- Posts card ----------
+  let postsPaging = null;
+
+  async function showPosts() {
+    if (current?.link.site !== "nexus") return;
+    const mod = current.link;
+    const key = mod.url;
+    let author = null;
+    try { author = (await loadMod(mod)).uploader; } catch { /* the card still opens */ }
+    if (current?.link.url !== key) return;
+    viewer.openPosts({ key, url: `${mod.url}?tab=posts`, author });
+    try {
+      const data = await loadPosts(mod);
+      postsPaging = { key, page: 1, pageCount: data.pageCount, widget: data.widget };
+      viewer.addPosts(key, { threads: data.threads, total: data.total, hasMore: data.pageCount > 1 && Boolean(data.widget) });
+    } catch (error) {
+      viewer.failPosts(key, error.message);
+    }
+  }
+
+  async function morePosts() {
+    const paging = postsPaging;
+    if (!paging?.widget || paging.key !== current?.link.url) return;
+    const page = paging.page + 1;
+    try {
+      const data = await loadPostsPage(paging.widget, page);
+      paging.page = page;
+      viewer.addPosts(paging.key, { threads: data.threads, hasMore: page < paging.pageCount });
+    } catch (error) {
+      viewer.failPosts(paging.key, error.message);
     }
   }
 

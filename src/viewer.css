@@ -287,6 +287,58 @@ a.chip:hover { color: var(--text); }
 .popover svg { width: 16px; height: 16px; color: var(--accent); }
 .popover kbd { padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); font: 11px/16px inherit; }
 
+/* ---------- Posts card (floats beside the preview) ---------- */
+.links button {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: none; font-size: 13px;
+}
+.links button svg { width: 15px; height: 15px; }
+.links button:hover, .links button[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.posts {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  animation: slide-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.posts.is-overlay { box-shadow: -20px 0 60px rgba(0, 0, 0, 0.7); }
+.posts:focus { outline: none; }
+@keyframes slide-in { from { opacity: 0; translate: -12px 0; } }
+.posts-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.posts-head h3 { margin: 0; flex: 1; font-size: 15px; }
+.posts-count { margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--raised); color: var(--muted); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.posts-open { font-size: 12px; color: var(--muted); text-decoration: none; }
+.posts-open:hover { color: var(--accent); }
+.posts-body { flex: 1; overflow: auto; padding: 12px; display: grid; align-content: start; gap: 10px; scrollbar-width: thin; scrollbar-color: #3a3c47 transparent; }
+.post { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--panel); border: 1px solid transparent; }
+.post.is-sticky { border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.post.is-author { background: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
+.post header { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.post .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--raised); object-fit: cover; }
+.post .who { min-width: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; overflow: hidden; }
+.post .who a { text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.post .who a:hover { color: var(--accent); }
+.post time { font-size: 11px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.badge { flex: none; padding: 0 6px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.badge.is-author { background: var(--accent); color: var(--accent-ink); }
+.badge.is-pinned { background: var(--raised); color: var(--accent); }
+.post-text { margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-line; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; }
+.post-text.is-open { display: block; }
+.post .more { justify-self: start; margin: -4px 0 0; }
+.replies-toggle { all: unset; justify-self: start; font-size: 12px; color: var(--accent); cursor: pointer; }
+.replies-toggle::before { content: "▸ "; }
+.replies-toggle[aria-expanded="true"]::before { content: "▾ "; }
+.replies { margin: 0; padding: 0 0 0 12px; list-style: none; display: grid; gap: 8px; border-left: 2px solid var(--line); }
+.replies .post { padding: 8px 10px; background: var(--raised); }
+.load-more { justify-self: center; padding: 8px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font-size: 13px; }
+.load-more:hover:not(:disabled) { border-color: var(--accent); }
+.posts .spinner { justify-self: center; margin: 24px 0; }
+
 /* ---------- Cinema (Nexus media posts) ---------- */
 .modal .dialog.cinema {
   width: calc(100vw - 32px);
