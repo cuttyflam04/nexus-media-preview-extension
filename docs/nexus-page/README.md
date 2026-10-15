@@ -68,7 +68,7 @@ Build with `scripts/package-distributions.ps1` (outputs to `dist/`).
 - Cinema mode for media pages, profile Media tabs and media links.
 - Works in the header search (including on mod pages) and in notifications.
 - YouTube videos below the gallery; screenshots first.
-- Posts card: the mod's latest threads beside the preview, with Load more.
+- Posts card: the mod's latest threads beside the preview, with Load more, search across all posts, and a draggable card.
 - Foldable requirements, Nexus and off-site.
 - Portrait screenshots letterboxed over a blurred backdrop instead of cropped.
 - Keyboard and accessibility: focus stays in the preview and returns to the card; reduced motion respected.

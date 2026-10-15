@@ -17,7 +17,8 @@
     chevron: '<path d="m6 9 6 6 6-6"/>',
     eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
     calendar: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>',
-    posts: '<path d="M4 5h16v11H8l-4 4Z"/>'
+    posts: '<path d="M4 5h16v11H8l-4 4Z"/>',
+    search: '<circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/>'
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -69,6 +70,10 @@
             <a class="posts-open" target="_blank" rel="noreferrer">Open on Nexus</a>
             <button class="icon-button" type="button" data-act="close-posts" aria-label="Close posts" title="Close posts (Esc)">${icon("close")}</button>
           </header>
+          <form class="posts-search" role="search">
+            ${icon("search")}
+            <input type="search" placeholder="Search all posts" aria-label="Search all posts" autocomplete="off" spellcheck="false">
+          </form>
           <div class="posts-body"></div>
         </section>
       </div>
@@ -121,6 +126,9 @@
     // Posts card: which mod it shows, threads already rendered, paging.
     let posts = null;
     let shiftedForPosts = false;
+    // Once the owner drags the card it stays where they put it.
+    let postsMoved = false;
+    let searchTimer = 0;
     let zoom = { scale: 1, x: 0, y: 0 };
     let statusTimer = 0;
     let savedOverflow = "";
@@ -130,6 +138,24 @@
     const drag = globalThis.NexusMediaPreviewModalDrag;
     drag?.attach(dialog, $(".header"));
     new MutationObserver(() => placePosts()).observe(dialog, { attributes: true, attributeFilter: ["style"] });
+    const postsHead = postsCard.querySelector(".posts-head");
+    drag?.attach(postsCard, postsHead);
+    postsHead.addEventListener("pointerdown", (event) => {
+      if (!event.target.closest("button, a, input")) postsMoved = true;
+    });
+    const searchInput = postsCard.querySelector(".posts-search input");
+    const runSearch = () => {
+      clearTimeout(searchTimer);
+      onPosts?.("search", searchInput.value.replace(/[,:]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80));
+    };
+    searchInput.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(runSearch, 450);
+    });
+    postsCard.querySelector(".posts-search").addEventListener("submit", (event) => {
+      event.preventDefault();
+      runSearch();
+    });
     window.addEventListener("resize", () => placePosts());
     // Mount right away so the shadow stylesheet is loaded before the first
     // popover has to be measured.
@@ -286,6 +312,14 @@
     }
 
     // ---------- Posts card ----------
+    function highlight(text) {
+      const html = escapeHtml(text);
+      const terms = (posts?.query || "").split(/\s+/).filter((term) => term.length > 1);
+      if (!terms.length) return html;
+      const pattern = new RegExp(`(${terms.map((term) => escapeHtml(term).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi");
+      return html.replace(pattern, "<mark>$1</mark>");
+    }
+
     function renderPost(post, author) {
       const isAuthor = author && post.name.toLowerCase() === author.toLowerCase();
       const badge = post.sticky ? '<span class="badge is-pinned">Pinned</span>' : isAuthor ? '<span class="badge is-author">Author</span>' : "";
@@ -299,7 +333,7 @@
           <span class="who">${post.url ? `<a href="${escapeHtml(post.url)}" target="_blank" rel="noreferrer">${escapeHtml(post.name)}</a>` : escapeHtml(post.name)}${badge}</span>
           <time>${escapeHtml(post.date || "")}</time>
         </header>
-        <p class="post-text">${escapeHtml(post.text || "")}</p>
+        <p class="post-text">${highlight(post.text || "")}</p>
         <button class="more" type="button" data-act="post-more" hidden>Show more</button>
         ${replies}
       </article>`;
@@ -313,7 +347,7 @@
     }
 
     function placePosts(allowShift = false) {
-      if (postsCard.hidden) return;
+      if (postsCard.hidden || postsMoved) return;
       const gap = 12;
       const margin = 16;
       const width = Math.min(400, window.innerWidth - margin * 2);
@@ -335,7 +369,10 @@
     }
 
     function openPosts(info) {
-      posts = { key: info.key, author: info.author || null, seen: new Set(), loading: true };
+      const sameMod = posts?.key === info.key;
+      posts = { key: info.key, author: info.author || null, seen: new Set(), loading: true, query: info.query || "" };
+      const input = postsCard.querySelector(".posts-search input");
+      if (!sameMod && !info.query) input.value = "";
       postsCard.hidden = false;
       postsCard.querySelector(".posts-count").textContent = info.total ? info.total.toLocaleString("en") : "";
       const open = postsCard.querySelector(".posts-open");
@@ -354,7 +391,9 @@
       postsBody.querySelector(".spinner")?.remove();
       postsBody.querySelector(".load-more")?.remove();
       if (!posts.seen.size) {
-        postsBody.innerHTML = '<div class="empty"><strong>No posts yet</strong></div>';
+        postsBody.innerHTML = posts.query
+          ? `<div class="empty"><strong>No posts match "${escapeHtml(posts.query)}"</strong><span>Try fewer or different words.</span></div>`
+          : '<div class="empty"><strong>No posts yet</strong></div>';
         return;
       }
       postsBody.insertAdjacentHTML("beforeend", fresh.map((thread) => renderPost(thread, posts.author)).join(""));
@@ -377,6 +416,9 @@
       side.querySelector("[data-act='posts']")?.setAttribute("aria-expanded", "false");
       if (shiftedForPosts) drag?.reset(dialog);
       shiftedForPosts = false;
+      postsMoved = false;
+      postsCard.style.cssText = "";
+      postsCard.querySelector(".posts-search input").value = "";
     }
 
     function renderEmpty(message, detail, url) {

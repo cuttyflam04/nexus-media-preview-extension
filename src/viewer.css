@@ -309,7 +309,19 @@ a.chip:hover { color: var(--text); }
 .posts.is-overlay { box-shadow: -20px 0 60px rgba(0, 0, 0, 0.7); }
 .posts:focus { outline: none; }
 @keyframes slide-in { from { opacity: 0; translate: -12px 0; } }
-.posts-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.posts-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 16px; background: var(--panel); cursor: grab; touch-action: none; }
+.posts.is-dragging { user-select: none; }
+.posts.is-dragging .posts-head { cursor: grabbing; }
+.posts-search { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 12px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.posts-search svg { position: absolute; margin-left: 10px; width: 16px; height: 16px; color: var(--muted); pointer-events: none; }
+.posts-search input {
+  flex: 1; min-width: 0; height: 34px; padding: 0 10px 0 34px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
+  color: var(--text); font: inherit; font-size: 13px;
+}
+.posts-search input::placeholder { color: var(--muted); }
+.posts-search input:focus { outline: none; border-color: var(--accent); }
+.post-text mark { background: color-mix(in srgb, var(--accent) 35%, transparent); color: var(--text); border-radius: 3px; padding: 0 1px; }
 .posts-head h3 { margin: 0; flex: 1; font-size: 15px; }
 .posts-count { margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--raised); color: var(--muted); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .posts-open { font-size: 12px; color: var(--muted); text-decoration: none; }

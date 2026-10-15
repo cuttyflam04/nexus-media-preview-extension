@@ -57,8 +57,9 @@
   const loadVideos = (mod) => cached(`${mod.url}#videos`, async () => sources.parseNexusVideosTab(await fetchDocument(`${mod.url}?tab=videos`)));
   const loadPosts = (mod) => cached(`${mod.url}#posts`, async () => sources.parseNexusPosts(await fetchDocument(`${mod.url}?tab=posts`)));
 
-  async function loadPostsPage(widget, page) {
-    const params = { ...widget.params, page };
+  async function loadPostsPage(widget, page, searchText = "") {
+    // Nexus searches every post of the mod server-side.
+    const params = { ...widget.params, page, search_text: searchText };
     const query = new URLSearchParams({ RH_CommentContainer: Object.entries(params).map(([key, value]) => `${key}:${value}`).join(",") });
     const response = await fetch(`${widget.uri}?${query}`, { credentials: "include", headers: { "X-Requested-With": "XMLHttpRequest" } });
     if (!response.ok) throw new Error(`The page answered ${response.status}.`);
@@ -142,7 +143,7 @@
     getSettings: () => settings,
     onNavigate: navigate,
     onClose: () => { current = null; },
-    onPosts: (command) => (command === "more" ? morePosts() : showPosts()),
+    onPosts: (command, value) => (command === "more" ? morePosts() : command === "search" ? showPosts(value) : showPosts()),
     onPopoverClick: (anchor) => {
       const target = resolveTarget(anchor);
       if (target) openTarget(target);
@@ -305,20 +306,25 @@
   // ---------- Posts card ----------
   let postsPaging = null;
 
-  async function showPosts() {
+  let postsRequest = 0;
+
+  async function showPosts(query = "") {
     if (current?.link.site !== "nexus") return;
     const mod = current.link;
     const key = mod.url;
+    const request = ++postsRequest;
     let author = null;
     try { author = (await loadMod(mod)).uploader; } catch { /* the card still opens */ }
-    if (current?.link.url !== key) return;
-    viewer.openPosts({ key, url: `${mod.url}?tab=posts`, author });
+    if (current?.link.url !== key || request !== postsRequest) return;
+    viewer.openPosts({ key, url: `${mod.url}?tab=posts`, author, query });
     try {
-      const data = await loadPosts(mod);
-      postsPaging = { key, page: 1, pageCount: data.pageCount, widget: data.widget };
-      viewer.addPosts(key, { threads: data.threads, total: data.total, hasMore: data.pageCount > 1 && Boolean(data.widget) });
+      const first = await loadPosts(mod);
+      const data = query && first.widget ? await loadPostsPage(first.widget, 1, query) : first;
+      if (request !== postsRequest) return;
+      postsPaging = { key, page: 1, pageCount: data.pageCount, widget: first.widget, query };
+      viewer.addPosts(key, { threads: data.threads, total: first.total, hasMore: data.pageCount > 1 && Boolean(first.widget) });
     } catch (error) {
-      viewer.failPosts(key, error.message);
+      if (request === postsRequest) viewer.failPosts(key, error.message);
     }
   }
 
@@ -327,7 +333,7 @@
     if (!paging?.widget || paging.key !== current?.link.url) return;
     const page = paging.page + 1;
     try {
-      const data = await loadPostsPage(paging.widget, page);
+      const data = await loadPostsPage(paging.widget, page, paging.query);
       paging.page = page;
       viewer.addPosts(paging.key, { threads: data.threads, hasMore: page < paging.pageCount });
     } catch (error) {
