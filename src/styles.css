@@ -104,3 +104,10 @@
     transform: none;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .nmp-button,
+  .nmp-peek i {
+    transition: none;
+  }
+}

@@ -329,6 +329,8 @@
 
   function armPeek(target) {
     if (!settings.hoverPeek || target.link.site !== "nexus" || peek.target?.tile === target.tile) return;
+    // Self-playing imagery is exactly what "reduce motion" asks to avoid.
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     stopPeek();
     peek.target = target;
     peek.timer = setTimeout(() => startPeek(target), 650);

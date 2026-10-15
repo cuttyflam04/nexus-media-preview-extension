@@ -61,7 +61,7 @@
           <aside class="side"></aside>
         </section>
       </div>
-      <div class="lightbox" hidden>
+      <div class="lightbox" role="dialog" aria-modal="true" aria-label="Full size image" tabindex="-1" hidden>
         <img alt="">
         <button class="arrow prev" type="button" data-act="prev" aria-label="Previous image">${icon("prev")}</button>
         <button class="arrow next" type="button" data-act="next" aria-label="Next image">${icon("next")}</button>
@@ -105,6 +105,7 @@
     let zoom = { scale: 1, x: 0, y: 0 };
     let statusTimer = 0;
     let savedOverflow = "";
+    let returnFocus = null;
     let popoverTimer = 0;
 
     const drag = globalThis.NexusMediaPreviewModalDrag;
@@ -272,6 +273,7 @@
       $(".tools").hidden = true;
       renderSide({ loading: entry.site !== "nexus-media" });
       if (modal.hidden) {
+        returnFocus = deepActiveElement();
         savedOverflow = document.documentElement.style.overflow;
         document.documentElement.style.overflow = "hidden";
       }
@@ -321,6 +323,9 @@
       player.innerHTML = "";
       modal.hidden = true;
       document.documentElement.style.overflow = savedOverflow;
+      // Give keyboard users their place back on the page.
+      if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+      returnFocus = null;
       onClose?.();
     }
 
@@ -346,10 +351,13 @@
       if (items[index]?.type !== "image") return;
       lightbox.hidden = false;
       syncLightbox();
+      lightbox.focus({ preventScroll: true });
     }
     function closeLightbox() {
+      if (lightbox.hidden) return;
       lightbox.hidden = true;
       lbImage.removeAttribute("src");
+      if (!modal.hidden) stage.focus({ preventScroll: true });
     }
 
     lightbox.addEventListener("wheel", (event) => {
@@ -410,9 +418,15 @@
     // Capture phase so page-level shortcut handlers (Nexus "/" search etc.)
     // never see keys meant for the preview.
     document.addEventListener("keydown", (event) => {
-      if (modal.hidden || !getSettings().keyboardShortcuts) return;
+      if (modal.hidden) return;
       const inLightbox = !lightbox.hidden;
       const key = event.key;
+      // Focus containment is not a shortcut: it applies even with shortcuts off.
+      if (key === "Tab") {
+        trapTab(event, inLightbox ? lightbox : dialog);
+        return;
+      }
+      if (!getSettings().keyboardShortcuts) return;
       let handled = true;
       if (key === "Escape") inLightbox ? closeLightbox() : close();
       else if (event.altKey && key === "ArrowLeft" && canNavigate) onNavigate?.(-1);
@@ -431,6 +445,31 @@
         event.stopImmediatePropagation();
       }
     }, true);
+
+    // ---------- Focus ----------
+    function deepActiveElement() {
+      let active = document.activeElement;
+      while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+      return active;
+    }
+
+    function trapTab(event, layer) {
+      const focusable = [...layer.querySelectorAll("button, a[href], iframe, summary, [tabindex]:not([tabindex='-1'])")]
+        .filter((node) => !node.disabled && node.getClientRects().length && !node.closest("[hidden]"));
+      if (!focusable.length) return;
+      const current = root.activeElement;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const outside = !layer.contains(current);
+      if (event.shiftKey && (current === first || outside)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (current === last || outside)) {
+        event.preventDefault();
+        first.focus();
+      }
+      event.stopImmediatePropagation();
+    }
 
     // ---------- Popover for text links ----------
     let popoverAnchor = null;
