@@ -1,0 +1,173 @@
+# Changelog
+
+## Version 2.0.0
+
+Complete rewrite, validated against the live Nexus Mods and La Confrérie pages in a real browser.
+
+- **No page scanning.** The 1.x content script rescanned the whole page on every DOM mutation (including its own), measuring every image and reading `textContent` up to `<body>`. 2.0 resolves targets lazily from the element under the pointer using Nexus's stable `data-e2eid` hooks. Measured on a 16 s browsing session of the top-mods list: about 1.1 s of extension CPU time in 1.13.19, about 1 ms in 2.0.
+- **One request per mod.** The mod page's own gallery already contains the full-size author images; the `?tab=images` request (whose list is loaded later by AJAX) is gone. Videos are fetched only when the mod has some.
+- **Videos inside the gallery.** YouTube videos are thumbnails in the same strip as images and play in the main stage.
+- **Media grids need no request.** On Media pages and profile Media tabs, thumbnails map directly to full-size images; the whole grid becomes one gallery.
+- **Quick Look.** Press `Space` on a hovered or focused mod, media or link to open its preview; `Space` again closes it.
+- **Hover peek.** Resting on a mod card flips its picture through the mod's screenshots (can be turned off).
+- **Isolated UI.** The viewer lives in a shadow root: site styles cannot break it, and it cannot affect the site.
+- Works inside the Nexus quick-search dialog, on legacy mod pages (text links, requirements), and across sites: a Nexus link on La Confrérie previews the Nexus mod.
+- Requirements now read Nexus's own "Nexus requirements" and "Off-site requirements" tables.
+- Adult-only mods show a clear message instead of an empty gallery when the session cannot see them.
+- Removed: grouped-notification heuristics, Vimeo/"Nexus video" links setting, and the 1.x size/class card guessing.
+
+## Version 1.13.19
+
+- Adds an initial Confrérie des Traducteurs adapter for dynamic media-preview buttons on Skyrim mod galleries.
+- Allows the existing copy and download actions to use Confrérie image hosts.
+- Makes the preview window draggable by its header while keeping it inside the viewport.
+- Coalesces drag updates per animation frame and keeps a usable part of the header visible when positioning the window near an edge.
+
+## Version 1.13.18
+
+- Uses only the canonical mod request for metadata to keep Nexus navigation responsive; no secondary Description-tab request is made.
+
+## Version 1.13.17
+
+- Avoids a second full Nexus page request for normal previews; the Description-tab fallback now runs only when the canonical page has no usable summary.
+
+## Version 1.13.16
+
+- Extracts only Nexus's short Description paragraph under “About this mod”; the long author-provided page content is no longer inserted into the preview card.
+
+## Version 1.13.15
+
+- Loads metadata from both the canonical mod page and its Description tab, so Description and Requirements remain available when a preview starts from a Files-tab link.
+
+## Version 1.13.14
+
+- Extracts the complete Nexus description container instead of the truncated SEO summary, with a metadata fallback for older layouts.
+
+## Version 1.13.13
+
+- Preserves Files-tab dependencies even when Nexus exposes a normalized anchor property without its raw query string.
+
+## Version 1.13.12
+
+## Version 1.13.11
+
+## Version 1.13.10
+
+## Version 1.13.9
+
+## Version 1.13.8
+
+- Resets the Requirements card when switching to another mod, preventing a previously expanded list from reappearing while the new metadata loads.
+
+## Version 1.13.7
+
+- Adds a compact chevron toggle at the top-right of Description and Requirements cards; expansion is instant and keeps the full content in the main scroll area.
+
+## Version 1.13.6
+
+- Detects Nexus requirement links rendered across nested requirement containers, including links that target a mod's Files tab.
+
+## Version 1.13.5
+
+- Stops and unloads embedded YouTube players when the preview is closed.
+
+## Version 1.13.4
+
+- Keeps Requirements as individual link cards and makes Description/Requirements compact clickable cards that open instantly to their full content without an inner scroll or slide animation.
+
+## Version 1.13.3
+
+- Replaces the collapsible Description and Requirements controls with full static cards inside the main scroll area.
+
+## Version 1.13.2
+
+- Removes the unused light-theme option so the preview keeps a consistent dark presentation.
+
+## Version 1.13.0
+
+- Adds a persistent Options page for Description, Author, Requirements, YouTube, Nexus video media, action buttons, keyboard shortcuts, opening mode, and preview width.
+- Applies preference changes to open previews without removing existing media or navigation features.
+
+## Version 1.12.16
+
+- Falls back to the measured result-card structure when Nexus omits search metadata entirely, so the camera appears consistently in portal search grids on mod pages.
+
+## Version 1.12.15
+
+- Detects portal-based search results on mod pages from the active query field, even when the result grid is rendered outside the search input's DOM subtree.
+- Prevents generic notification rows that resemble mod cards from receiving the card camera overlay.
+
+## Version 1.12.14
+
+- Detects search panels on mod pages through their owned input field even when Nexus omits semantic search classes or roles.
+- Removes stale camera overlays when a previously scanned element is later identified as a non-search row.
+
+## Version 1.12.13
+
+- Restricts the camera overlay to real search contexts, including the search dialog field, while leaving generic notification/activity rows on the floating **Media** control.
+
+## Version 1.12.12
+
+- Restricted camera-style injection to identifiable search-result contexts so generic notification/activity rows always use the floating **Media** link control.
+
+## Version 1.12.11
+
+- Prevented the camera-style search-card button from being injected into notification rows; notification mod/media links keep the floating **Media** control.
+
+## Version 1.12.10
+
+- Search-card preview buttons now retry when result images finish loading or when the search panel changes visibility, making their appearance deterministic across repeated searches.
+
+## Version 1.12.9
+
+- Author data now comes only from the fetched Nexus mod page, prioritizing the displayed `Uploaded by` label and then `Created by`.
+- Removed source-card author fallback so search results, notifications, and the signed-in user area cannot supply the wrong author.
+- Search result media buttons are now attached to the result card itself with a dedicated visible overlay class.
+
+## Version 1.12.8
+
+- Added a dedicated image-based pass for Nexus search results so media buttons appear on compact search cards.
+- Shows the author card immediately from the clicked card/notification when Nexus exposes a profile link there, then refines it from the mod page when available.
+- Reworked the preview header so title, author, download count, and action buttons stay grouped predictably.
+
+## Version 1.12.7
+
+- Limited compact-card detection so the extension does not attach controls to large Nexus containers.
+- Debounced DOM scanning through `requestAnimationFrame` and guarded injection errors to avoid disrupting Nexus page behavior.
+
+## Version 1.12.6
+
+- Restored safe Description text extraction so page scripts and footer text do not appear in the viewer.
+- Made the author control an icon-only header action and removed the unsafe fallback that could pick the signed-in user profile.
+- Restored media buttons on compact Nexus search result cards with a structure-based card fallback.
+
+## Version 1.12.5
+
+- Added compact author and total-download cards to the preview header using Nexus page data.
+- Limited the mod-title link hit area to the visible title text so header actions do not overlap.
+- Added a broader description extractor, later narrowed in 1.12.6 after Nexus page noise leaked into the viewer.
+
+## Version 1.12.4
+
+- Fixed previous/next mod navigation for previews opened from standalone mod links on mod pages.
+- Kept media-card pages on the dedicated corner camera button and suppressed the redundant floating Media popover there.
+- Positioned the floating Media button near the cursor or visible link text for wide table links.
+
+## Version 1.12.3
+
+- Added dynamic floating Media support for Nexus image/video links, including notifications and profile media links.
+- Media links now open the same viewer as mod links, using the linked media page instead of requiring a mod card.
+
+## Version 1.12.2
+
+- Restored the floating Media button for standalone text links so dense mod lists keep their original layout.
+- Removed the repeated inline icon placement from link-heavy mod descriptions.
+
+## Version 1.12.1
+
+- Finished the inline-link control and removed the obsolete hover popover.
+- Fixed video discovery being skipped on mods with many images.
+- Added robust YouTube URL and lazy-iframe detection.
+- Completed Requirements and enlarged-view styling and navigation.
+- Removed fabricated "Not Downloaded Yet" states and duplicate metadata requests.
+- Removed editor-only notes and repaired the English documentation.

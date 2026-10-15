@@ -8,7 +8,7 @@
     openMode: "modal",
     keyboardShortcuts: true,
     modalWidth: "normal",
-    showNexusVideos: true
+    hoverPeek: true
   });
 
   const booleanKeys = [
@@ -18,7 +18,7 @@
     "showYoutube",
     "showActionButtons",
     "keyboardShortcuts",
-    "showNexusVideos"
+    "hoverPeek"
   ];
 
   function sanitize(raw = {}) {

@@ -21,7 +21,7 @@ test("provides stable defaults for every user-facing preference", () => {
     openMode: "modal",
     keyboardShortcuts: true,
     modalWidth: "normal",
-    showNexusVideos: true
+    hoverPeek: true
   });
 });
 
@@ -37,7 +37,7 @@ test("sanitizes persisted preferences without accepting invalid values", () => {
     openMode: "new-tab",
     keyboardShortcuts: false,
     modalWidth: "wide",
-    showNexusVideos: false,
+    hoverPeek: false,
     unknown: "ignored"
   }))), {
     showDescription: false,
@@ -48,6 +48,6 @@ test("sanitizes persisted preferences without accepting invalid values", () => {
     openMode: "new-tab",
     keyboardShortcuts: false,
     modalWidth: "wide",
-    showNexusVideos: false
+    hoverPeek: false
   });
 });
