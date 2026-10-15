@@ -13,7 +13,8 @@
     downloads: '<path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/>',
     heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>',
     check: '<path d="m5 12 5 5L20 7"/>',
-    play: '<path d="M8 5v14l11-7Z"/>'
+    play: '<path d="M8 5v14l11-7Z"/>',
+    chevron: '<path d="m6 9 6 6 6-6"/>'
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -96,6 +97,7 @@
     let items = [];
     let videos = [];
     let dataEmpty = {};
+    let requirementsOpen = null;
     let index = 0;
     let canNavigate = false;
     let itemTitles = false;
@@ -138,16 +140,19 @@
         parts.push(`<section class="summary"><h3>About</h3><p>${escapeHtml(data.summary)}</p><button class="more" type="button" data-act="more" hidden>Show more</button></section>`);
       }
       if (settings.showRequirements && data.requirements?.length) {
-        parts.push(`<section class="requirements"><h3>Requirements</h3><ul>${data.requirements.map((req) => `<li>${
+        // Long lists start folded; the owner's last choice wins for the next mods.
+        const open = requirementsOpen ?? data.requirements.length <= 5;
+        parts.push(`<details class="requirements"${open ? " open" : ""}><summary><h3>Requirements</h3><span class="count">${data.requirements.length}</span>${icon("chevron")}</summary><ul>${data.requirements.map((req) => `<li>${
           req.url
             ? `<a href="${escapeHtml(req.url)}" target="_blank" rel="noreferrer">${escapeHtml(req.name)}${req.offsite ? "<small>off-site</small>" : ""}</a>`
             : `<span>${escapeHtml(req.name)}</span>`
-        }</li>`).join("")}</ul></section>`);
+        }</li>`).join("")}</ul></details>`);
       }
       if (data.links?.length) {
         parts.push(`<section><h3>Open</h3><div class="links">${data.links.map((link) => `<a href="${escapeHtml(link.url)}" target="${link.newTab === false ? "_self" : "_blank"}" rel="noreferrer">${escapeHtml(link.label)}</a>`).join("")}</div></section>`);
       }
       side.innerHTML = parts.join("");
+      side.querySelector(".requirements")?.addEventListener("toggle", (event) => { requirementsOpen = event.target.open; });
       dialog.classList.toggle("no-side", !parts.length || getSettings().modalWidth === "compact");
       const summary = side.querySelector(".summary p");
       if (summary && summary.scrollHeight > summary.clientHeight + 2) side.querySelector(".more").hidden = false;

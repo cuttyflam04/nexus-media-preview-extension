@@ -116,8 +116,9 @@ a.chip:hover { color: var(--text); }
   position: relative;
   display: grid;
   place-items: center;
-  height: min(62vh, 620px);
-  min-height: 240px;
+  /* Leave room for the header, the padding and the thumbnail strip so the
+     strip stays on screen on short windows. */
+  height: clamp(200px, calc(100vh - 270px), 620px);
   flex-shrink: 0;
   border-radius: 10px;
   background: #0d0e11 radial-gradient(circle at 50% 40%, #1d1e25, #0d0e11 70%);
@@ -164,7 +165,8 @@ a.chip:hover { color: var(--text); }
 .status { right: 10px; color: var(--accent); }
 .status:empty { display: none; }
 
-.strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; scrollbar-color: #3a3c47 transparent; }
+/* flex-shrink: 0, or the strip collapses to its scrollbar when the videos below overflow the column. */
+.strip { flex-shrink: 0; display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; scrollbar-color: #3a3c47 transparent; }
 .thumb {
   all: unset;
   position: relative;
@@ -193,7 +195,7 @@ a.chip:hover { color: var(--text); }
 .thumb .play svg { width: 26px; height: 26px; fill: #fff; stroke: none; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6)); }
 
 /* ---------- Videos (under the gallery) ---------- */
-.videos { display: grid; gap: 10px; padding-top: 6px; border-top: 1px solid var(--line); }
+.videos { flex-shrink: 0; display: grid; gap: 10px; padding-top: 6px; border-top: 1px solid var(--line); }
 .videos h3 { margin: 6px 0 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .video-count { margin-left: 4px; color: var(--text); }
 .player { aspect-ratio: 16 / 9; width: 100%; border-radius: 10px; overflow: hidden; background: #000; }
@@ -215,6 +217,13 @@ a.chip:hover { color: var(--text); }
 .summary p { margin: 0; white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 9; -webkit-box-orient: vertical; overflow: hidden; }
 .summary.is-open p { display: block; }
 .more { all: unset; margin-top: 4px; color: var(--accent); font-size: 12px; cursor: pointer; }
+.requirements summary { display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; margin-bottom: 6px; }
+.requirements summary::-webkit-details-marker { display: none; }
+.requirements summary h3 { margin: 0; }
+.requirements summary .count { padding: 0 6px; border-radius: 999px; background: var(--raised); color: var(--text); font-size: 11px; }
+.requirements summary svg { width: 14px; height: 14px; margin-left: auto; color: var(--muted); transition: rotate 0.15s; }
+.requirements[open] summary svg { rotate: 180deg; }
+.requirements summary:hover h3, .requirements summary:hover svg { color: var(--text); }
 .requirements ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
 .requirements a, .requirements span {
   display: flex;
