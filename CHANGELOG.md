@@ -8,7 +8,7 @@ Complete rewrite, validated against the live Nexus Mods pages in a real browser.
 - **One request per mod.** The mod page's own gallery already contains the full-size author images; the `?tab=images` request (whose list is loaded later by AJAX) is gone. Videos are fetched only when the mod has some.
 - **Videos below the gallery.** Screenshots stay first: arrows, counter and full-size view only walk images, and the mod's YouTube videos sit in their own section underneath with an inline player.
 - Portrait screenshots are letterboxed instead of cropped.
-- **Media grids need no request.** On Media pages and profile Media tabs, thumbnails map directly to full-size images; the whole grid becomes one gallery.
+- **Cinema mode for Nexus media.** Media pages, profile Media tabs and media links open a near-fullscreen view: images and YouTube videos in one strip (videos play in place), with title, uploader, endorsements, views, date, description and the mods a video features. The grid itself needs no request; post details load on demand.
 - **Quick Look.** Press `Space` on a hovered or focused mod, media or link to open its preview; `Space` again closes it.
 - **Hover peek.** Resting on a mod card flips its picture through the mod's screenshots (can be turned off).
 - **Isolated UI.** The viewer lives in a shadow root: site styles cannot break it, and it cannot affect the site.

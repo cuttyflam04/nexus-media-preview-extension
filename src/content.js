@@ -250,26 +250,41 @@
     const thumb = anchor?.querySelector("img")?.getAttribute("src");
     if (!link || !thumb) return null;
     const caption = textOf(tile.querySelector("[data-e2eid='media-tile-title']")) || anchor.querySelector("img").alt || "Nexus media";
+    const authorLink = tile.querySelector("[data-e2eid='media-tile-author']");
+    const base = {
+      caption,
+      thumb,
+      pageUrl: link.url,
+      author: authorLink ? { name: textOf(authorLink).replace(/^by\s+/i, ""), url: authorLink.href } : null,
+      endorsements: textOf(tile.querySelector("[data-e2eid='media-tile-endorsements']")),
+      views: textOf(tile.querySelector("[data-e2eid='media-tile-views']"))
+    };
     if (link.kind === "video") {
       const id = sources.youtubeId(thumb);
-      return id ? { type: "video", id, title: caption, caption, thumb, pageUrl: link.url } : null;
+      return id ? { ...base, type: "video", id, title: caption } : null;
     }
-    return { type: "image", src: sources.fullImageUrl(thumb), thumb, caption, pageUrl: link.url };
+    return { ...base, type: "image", src: sources.fullImageUrl(thumb) };
   }
+
+  // Cinema: the grid gives title/author/stats at once; the post page (fetched
+  // on demand, cached) adds description, date and featured mods.
+  const describeMedia = (item) => loadMedia({ url: item.pageUrl });
 
   async function openMedia(target, token) {
     const { link } = target;
-    viewer.open({ site: "nexus-media", title: textOf(target.tile?.querySelector("[data-e2eid='media-tile-title']")) || "Nexus media", url: link.url, context: target.anchor });
+    viewer.open({ site: "nexus-media", mode: "cinema", title: textOf(target.tile?.querySelector("[data-e2eid='media-tile-title']")) || "Nexus media", url: link.url, context: target.anchor });
     if (target.kind === "tile") {
-      // Media grids need no request at all: thumbnails map to full images.
-      const items = [...document.querySelectorAll("[data-e2eid='media-tile']")].map(mediaItemFromTile).filter(Boolean);
+      const grid = target.tile.getRootNode();
+      const items = [...grid.querySelectorAll("[data-e2eid='media-tile']")].map(mediaItemFromTile).filter(Boolean);
       const startIndex = Math.max(0, items.findIndex((item) => item.pageUrl === link.url));
-      viewer.update({ items, startIndex, itemTitles: true, url: link.url });
+      viewer.update({ mode: "cinema", items, startIndex, itemTitles: true, url: link.url, describe: describeMedia });
       return;
     }
     try {
       const data = await loadMedia(link);
-      if (token === openToken) viewer.update({ ...data, itemTitles: true, links: [{ label: "Media page", url: link.url }] });
+      if (token !== openToken) return;
+      const items = data.items.map((item) => ({ ...item, author: data.author }));
+      viewer.update({ mode: "cinema", items, itemTitles: true, url: link.url, describe: describeMedia, emptyMessage: "No media found" });
     } catch (error) {
       if (token === openToken) viewer.fail(error.message, link.url);
     }

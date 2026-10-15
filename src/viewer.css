@@ -287,8 +287,26 @@ a.chip:hover { color: var(--text); }
 .popover svg { width: 16px; height: 16px; color: var(--accent); }
 .popover kbd { padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); font: 11px/16px inherit; }
 
+/* ---------- Cinema (Nexus media posts) ---------- */
+.modal .dialog.cinema {
+  width: calc(100vw - 32px);
+  height: calc(100vh - 32px);
+  max-height: none;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  background: #0b0c0f;
+}
+.dialog.cinema .mod-nav { display: none; }
+.dialog.cinema .main { overflow: hidden; }
+.dialog.cinema .stage-wrap { height: auto; flex: 1 1 0; min-height: 0; }
+.dialog.cinema .stage iframe { position: relative; z-index: 1; }
+.dialog.cinema .side { background: var(--bg); }
+.dialog.cinema .summary p { font-size: 15px; }
+
 /* ---------- Small screens ---------- */
 @media (max-width: 900px) {
+  .modal .dialog.cinema { width: 100vw; height: 100vh; grid-template-columns: minmax(0, 1fr); }
+  .dialog.cinema .main { overflow: visible; }
+  .dialog.cinema .stage-wrap { flex: none; height: 56vh; }
   .dialog { left: 0; top: 0; transform: none; width: 100vw !important; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; max-height: 100vh; height: 100vh; border-radius: 0; overflow: auto; }
   .side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
   .main { overflow: visible; }

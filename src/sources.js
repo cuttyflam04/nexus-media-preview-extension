@@ -163,17 +163,41 @@
       .filter(Boolean));
   }
 
-  // /{game}/images/{id} or /{game}/videos/{id}
+  // /{game}/images/{id} or /{game}/videos/{id} (legacy layout). Returns the
+  // media item plus the details the cinema view shows next to it.
   function parseNexusMediaPage(doc, pageUrl) {
-    const title = cleanTitle(doc.querySelector("meta[property='og:title']")?.content || doc.querySelector("h1")?.textContent) || "Nexus media";
-    const iframe = [...doc.querySelectorAll("iframe[src]")].map((f) => youtubeId(f.getAttribute("src"))).find(Boolean);
-    if (iframe) return { title, url: pageUrl, items: [video(iframe, title)] };
+    const title = cleanTitle(doc.querySelector("meta[property='og:title']")?.content || doc.querySelector("h1")?.textContent)
+      .replace(/^(?:Screenshot|Video|Image)\s*::\s*/i, "") || "Nexus media";
+    const author = doc.querySelector("#image-author-name");
+    const details = {
+      title,
+      pageUrl,
+      // Authors often leave "-" or "..." as a description: keep only real text.
+      description: [cleanText((doc.querySelector("#full-image-description, .video-description") || {}).textContent)].find((text) => /[\p{L}\p{N}]/u.test(text)) || null,
+      date: textOf(doc.querySelector("#fileinfo time .date")) || null,
+      author: author ? { name: textOf(author), url: author.href } : null,
+      moreUrl: doc.querySelector("#fileinfo a[href*='?tab=']")?.href || null,
+      // Videos list the mods they show as legacy tiles.
+      mods: dedupeBy([...doc.querySelectorAll(".tile-name a[href*='/mods/']")]
+        .map((a) => ({ name: textOf(a), url: parseModUrl(a.href)?.url }))
+        .filter((mod) => mod.name && mod.url), (mod) => mod.url)
+    };
 
+    const id = [...doc.querySelectorAll("iframe[src]")].map((f) => youtubeId(f.getAttribute("src"))).find(Boolean);
+    if (id) return { ...details, url: pageUrl, items: [{ ...video(id, title), caption: title, pageUrl }] };
+
+    // The post picture sits in a.inline-gallery; other staticdelivery images on
+    // the page are news tiles.
     const og = doc.querySelector("meta[property='og:image']")?.content;
-    const src = [...doc.querySelectorAll("img[src*='staticdelivery.nexusmods.com/images/']")]
-      .map((img) => img.getAttribute("src"))
-      .find((value) => !/\/thumbnails\//.test(value)) || (og ? fullImageUrl(og) : null);
-    return { title, url: pageUrl, items: src ? [{ type: "image", src, thumb: og || src, caption: title, pageUrl }] : [] };
+    const src = doc.querySelector("a.inline-gallery img")?.getAttribute("src")
+      || [...doc.querySelectorAll("img[src]")].map((img) => img.getAttribute("src")).find((value) => /staticdelivery\.nexusmods\.com\/images\/\d+\/(?!thumbnails\/)/.test(value))
+      || (og ? fullImageUrl(og) : null);
+    return { ...details, url: pageUrl, items: src ? [{ type: "image", src, thumb: og || src, caption: title, pageUrl }] : [] };
+  }
+
+  function dedupeBy(list, key) {
+    const seen = new Set();
+    return list.filter((entry) => !seen.has(key(entry)) && seen.add(key(entry)));
   }
 
   globalThis.NexusMediaPreviewSources = {

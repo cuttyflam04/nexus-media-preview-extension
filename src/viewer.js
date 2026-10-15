@@ -14,7 +14,9 @@
     heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>',
     check: '<path d="m5 12 5 5L20 7"/>',
     play: '<path d="M8 5v14l11-7Z"/>',
-    chevron: '<path d="m6 9 6 6 6-6"/>'
+    chevron: '<path d="m6 9 6 6 6-6"/>',
+    eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+    calendar: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>'
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -102,6 +104,9 @@
     let index = 0;
     let canNavigate = false;
     let itemTitles = false;
+    // Cinema mode (Nexus media posts): images and videos share the stage and
+    // the strip, and the side panel describes the current post.
+    let cinema = null;
     let zoom = { scale: 1, x: 0, y: 0 };
     let statusTimer = 0;
     let savedOverflow = "";
@@ -163,8 +168,9 @@
     function renderStrip() {
       strip.hidden = items.length < 2;
       strip.innerHTML = items.map((item, i) => `
-        <button class="thumb" type="button" data-index="${i}" aria-label="Image ${i + 1}">
+        <button class="thumb" type="button" data-index="${i}" aria-label="${item.type === "video" ? "Video" : "Image"} ${i + 1}">
           <img src="${escapeHtml(item.thumb || item.src)}" alt="" loading="lazy">
+          ${item.type === "video" ? `<span class="play">${icon("play")}</span>` : ""}
         </button>`).join("");
     }
 
@@ -198,22 +204,27 @@
       if (!items.length) return;
       index = (i + items.length) % items.length;
       const item = items[index];
-      stage.classList.remove("is-video");
-      stage.innerHTML = `<img class="is-loading" alt="${escapeHtml(item.caption || "")}">`;
-      const img = stage.firstElementChild;
-      img.onload = img.onerror = () => img.classList.remove("is-loading");
-      img.src = item.src;
       // Blurred copy behind the picture fills the letterbox (portraits).
       stageWrap.style.setProperty("--stage-bg", `url(${JSON.stringify(item.thumb || item.src)})`);
+      stage.classList.toggle("is-video", item.type === "video");
+      if (item.type === "video") {
+        stage.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${escapeHtml(item.id)}?autoplay=1" title="${escapeHtml(item.title || item.caption || "Video")}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+      } else {
+        stage.innerHTML = `<img class="is-loading" alt="${escapeHtml(item.caption || "")}">`;
+        const img = stage.firstElementChild;
+        img.onload = img.onerror = () => img.classList.remove("is-loading");
+        img.src = item.src;
+      }
       // Warm the neighbours so arrow navigation feels instant.
-      for (const near of [items[index + 1], items[index - 1]]) if (near) new Image().src = near.src;
+      for (const near of [items[index + 1], items[index - 1]]) if (near?.type === "image") new Image().src = near.src;
       counter.textContent = `${index + 1} / ${items.length}`;
       if (itemTitles) {
         title.textContent = item.caption || "Nexus media";
         title.href = item.pageUrl || title.href;
       }
       root.querySelectorAll(".arrow").forEach((arrow) => { arrow.hidden = items.length < 2; });
-      $(".tools").hidden = !getSettings().showActionButtons;
+      $(".tools").hidden = item.type !== "image" || !getSettings().showActionButtons;
+      if (cinema) renderMediaInfo(item);
       strip.querySelectorAll(".thumb").forEach((thumb) => thumb.classList.toggle("is-active", Number(thumb.dataset.index) === index));
       // Scroll the strip only: scrollIntoView() would also scroll the page behind the modal.
       const active = strip.querySelector(".thumb.is-active");
@@ -223,6 +234,37 @@
         if (a.left < b.left || a.right > b.right) strip.scrollBy({ left: a.left - b.left - (b.width - a.width) / 2, behavior: "smooth" });
       }
       if (!lightbox.hidden) syncLightbox();
+    }
+
+    function renderMediaInfo(item, details) {
+      const settings = getSettings();
+      const d = details || {};
+      const author = d.author || item.author;
+      renderChips([
+        settings.showAuthor && author ? { icon: "user", label: author.name, url: author.url, title: "Uploader" } : null,
+        item.endorsements ? { icon: "heart", label: item.endorsements, title: "Endorsements" } : null,
+        item.views ? { icon: "eye", label: `${item.views} views` } : null,
+        d.date ? { icon: "calendar", label: d.date } : null
+      ]);
+      const parts = [];
+      if (!details) parts.push('<section><h3>About</h3><div class="skeleton"></div><div class="skeleton"></div></section>');
+      else if (settings.showDescription && d.description) parts.push(`<section class="summary is-open"><h3>About</h3><p>${escapeHtml(d.description)}</p></section>`);
+      if (d.mods?.length) {
+        parts.push(`<section class="requirements"><h3>Mods in this video</h3><ul>${d.mods.map((mod) => `<li><a href="${escapeHtml(mod.url)}" target="_blank" rel="noreferrer">${escapeHtml(mod.name)}</a></li>`).join("")}</ul></section>`);
+      }
+      const links = [
+        item.pageUrl ? { label: item.type === "video" ? "Video page" : "Image page", url: item.pageUrl } : null,
+        d.moreUrl ? { label: "More from uploader", url: d.moreUrl } : null
+      ].filter(Boolean);
+      if (links.length) parts.push(`<section><h3>Open</h3><div class="links">${links.map((link) => `<a href="${escapeHtml(link.url)}" target="_blank" rel="noreferrer">${escapeHtml(link.label)}</a>`).join("")}</div></section>`);
+      side.innerHTML = parts.join("");
+      if (!details && cinema?.describe) {
+        cinema.describe(item).then((loaded) => {
+          if (items[index] === item) renderMediaInfo(item, loaded || {});
+        }, () => {
+          if (items[index] === item) renderMediaInfo(item, {});
+        });
+      }
     }
 
     function renderEmpty(message, detail, url) {
@@ -256,6 +298,8 @@
       host.dataset.site = entry.site || "nexus";
       modal.dataset.width = settings.modalWidth;
       if (modal.hidden) drag?.reset(dialog);
+      cinema = null;
+      dialog.classList.toggle("cinema", entry.mode === "cinema");
       canNavigate = Boolean(entry.canNavigate);
       $("[data-act='prev-mod']").parentElement.hidden = !canNavigate;
       title.textContent = entry.title || "Loading…";
@@ -289,6 +333,18 @@
       itemTitles = Boolean(data.itemTitles);
       dataEmpty = { message: data.emptyMessage, detail: data.emptyDetail, url: data.url };
       const all = data.items || [];
+      if (data.mode === "cinema") {
+        cinema = { describe: data.describe };
+        dialog.classList.add("cinema");
+        dialog.classList.remove("no-side");
+        items = getSettings().showYoutube ? all : all.filter((item) => item.type !== "video");
+        videos = [];
+        renderVideos();
+        if (!items.length) return renderEmpty(data.emptyMessage || "No media found", data.emptyDetail, data.url);
+        renderStrip();
+        show(Math.max(0, items.indexOf(all[data.startIndex || 0])));
+        return;
+      }
       items = all.filter((item) => item.type === "image");
       videos = getSettings().showYoutube ? all.filter((item) => item.type === "video") : [];
       renderVideos();

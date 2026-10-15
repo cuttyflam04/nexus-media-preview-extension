@@ -12,7 +12,7 @@ Preview a mod's screenshots, videos, description and requirements without leavin
 - **Mod details**: author, downloads, endorsements, short description, Nexus and off-site requirements, and your last download date when Nexus shows it.
 - **Browse without closing**: previous/next mod in the header (`Alt+←` / `Alt+→`) follows the cards on the page.
 - **Image actions**: copy, download, open in a new tab.
-- **Media pages**: on Media pages and profile Media tabs, the whole grid opens as one gallery without any extra request.
+- **Cinema mode for media**: on Media pages, profile Media tabs and media links, a near-fullscreen view walks the whole grid (images and videos) with the post's details beside it.
 
 ## Keyboard
 
