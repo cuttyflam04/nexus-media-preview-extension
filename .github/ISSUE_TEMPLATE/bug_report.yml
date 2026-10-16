@@ -12,7 +12,7 @@ body:
     id: extension-version
     attributes:
       label: Extension version
-      placeholder: "1.13.18 or GitHub release v1.0"
+      placeholder: "2.0.0 (shown on the settings page)"
     validations:
       required: true
   - type: input
