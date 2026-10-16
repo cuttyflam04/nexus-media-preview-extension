@@ -171,6 +171,11 @@
     }
 
     // ---------- Rendering ----------
+    function setTitle(text) {
+      title.textContent = text;
+      title.title = text;
+    }
+
     function renderChips(list = []) {
       chips.innerHTML = list.filter(Boolean).map((chip) => {
         const body = `${icon(chip.icon || "check")}<span>${escapeHtml(chip.label)}</span>`;
@@ -265,7 +270,7 @@
       for (const near of [items[index + 1], items[index - 1]]) if (near?.type === "image") new Image().src = near.src;
       counter.textContent = `${index + 1} / ${items.length}`;
       if (itemTitles) {
-        title.textContent = item.caption || "Nexus media";
+        setTitle(item.caption || "Nexus media");
         title.href = item.pageUrl || title.href;
       }
       root.querySelectorAll(".arrow").forEach((arrow) => { arrow.hidden = items.length < 2; });
@@ -471,7 +476,7 @@
       dialog.classList.toggle("cinema", entry.mode === "cinema");
       canNavigate = Boolean(entry.canNavigate);
       $("[data-act='prev-mod']").parentElement.hidden = !canNavigate;
-      title.textContent = entry.title || "Loading…";
+      setTitle(entry.title || "Loading…");
       title.href = entry.url || "#";
       renderChips(entry.chips);
       setEndorse(null);
@@ -496,7 +501,7 @@
     }
 
     function update(data) {
-      if (data.title) title.textContent = data.title;
+      if (data.title) setTitle(data.title);
       if (data.url) title.href = data.url;
       if (data.chips) renderChips(data.chips);
       renderSide(data);

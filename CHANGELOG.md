@@ -14,6 +14,7 @@ Complete rewrite, validated against the live Nexus Mods pages in a real browser.
 - **Isolated UI.** The viewer lives in a shadow root: site styles cannot break it, and it cannot affect the site.
 - Works inside the Nexus quick-search dialog (including on legacy mod pages, where it lives in a shadow root), in notifications, and on legacy mod pages (text links, requirements).
 - **Posts beside the preview.** The Posts link opens the mod's latest threads in a second floating card (pinned first, uploader badged, replies folded, Load more), with a search across every post of the mod (terms highlighted). The card can be dragged anywhere and follows the mod as you browse.
+- **Endorse from the preview.** An Endorse / Endorsed toggle in the header, shown when Nexus offers it (logged in, mod downloaded).
 - Requirements now read Nexus's own "Nexus requirements" and "Off-site requirements" tables.
 - Adult-only mods show a clear message instead of an empty gallery when the session cannot see them.
 - Removed: La Confrérie des Traducteurs support (Nexus Mods only), grouped-notification heuristics, Vimeo/"Nexus video" links setting, and the 1.x size/class card guessing.
