@@ -45,17 +45,33 @@ function New-BrowserPackage {
 
   $packageManifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
   if ($IncludeServiceWorker) {
+    # Chromium: service worker only; the Firefox id would only raise a warning.
     $packageManifest.background.PSObject.Properties.Remove("scripts")
+    $packageManifest.PSObject.Properties.Remove("browser_specific_settings")
   } else {
     $packageManifest.background.PSObject.Properties.Remove("service_worker")
   }
-  $packageManifest | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $stage "manifest.json") -Encoding utf8
+  # UTF-8 without BOM: store validators reject a BOM in manifest.json.
+  $json = $packageManifest | ConvertTo-Json -Depth 20
+  [System.IO.File]::WriteAllText((Join-Path $stage "manifest.json"), $json, (New-Object System.Text.UTF8Encoding($false)))
 
   $zipPath = Join-Path $outputRoot "nexus-media-preview-$version-$Browser.zip"
   if (Test-Path -LiteralPath $zipPath) {
     Remove-Item -LiteralPath $zipPath -Force
   }
-  Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $zipPath -CompressionLevel Optimal
+  # Build the ZIP entry by entry with forward slashes: Windows PowerShell's
+  # Compress-Archive writes backslashes, which addons.mozilla.org refuses.
+  Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+  $zip = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
+  try {
+    $stageFull = (Resolve-Path -LiteralPath $stage).Path.TrimEnd("\") + "\"
+    foreach ($file in Get-ChildItem -LiteralPath $stage -Recurse -File) {
+      $entry = $file.FullName.Substring($stageFull.Length).Replace("\", "/")
+      [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $entry, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+    }
+  } finally {
+    $zip.Dispose()
+  }
   return Get-Item -LiteralPath $zipPath
 }
 
