@@ -143,6 +143,7 @@
     getSettings: () => settings,
     onNavigate: navigate,
     onClose: () => { current = null; },
+    onEndorse: (positive) => endorse(positive),
     onPosts: (command, value) => (command === "more" ? morePosts() : command === "search" ? showPosts(value) : showPosts()),
     onPopoverClick: (anchor) => {
       const target = resolveTarget(anchor);
@@ -247,6 +248,8 @@
           { label: "Posts", action: "posts", url: `${link.url}?tab=posts` }
         ]
       });
+      endorseState = data.endorse ? { ...data.endorse, key: link.url } : null;
+      viewer.setEndorse(endorseState);
       if (viewer.postsOpen) showPosts();
       if (settings.showYoutube && data.videoCount) {
         const videos = await loadVideos(link);
@@ -301,6 +304,32 @@
     } catch (error) {
       if (token === openToken) viewer.fail(error.message, link.url);
     }
+  }
+
+  // ---------- Endorse (same call as the button on the mod page) ----------
+  let endorseState = null;
+
+  async function endorse(positive) {
+    const state = endorseState;
+    if (!state || state.key !== current?.link.url) return;
+    viewer.setEndorse({ ...state, busy: true });
+    try {
+      const response = await fetch(`/api/games/${state.gameId}/mods/${state.modId}/endorse`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "X-Requested-With": "XMLHttpRequest", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        body: new URLSearchParams({ positive: String(positive) })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.status !== true) throw new Error(result.message || `Nexus answered ${response.status}.`);
+      state.endorsed = positive;
+      cache.delete(state.key); // the cached page still holds the old state
+      viewer.notify(positive ? "Endorsed, thank you" : "Endorsement removed");
+    } catch (error) {
+      // Nexus explains refusals itself (e.g. download the mod first).
+      viewer.notify(String(error.message).replace(/<[^>]+>/g, "").slice(0, 140));
+    }
+    if (endorseState === state) viewer.setEndorse(state);
   }
 
   // ---------- Posts card ----------

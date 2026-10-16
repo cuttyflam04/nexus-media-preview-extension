@@ -141,6 +141,15 @@
 
     const videoCount = Number(textOf(doc.querySelector("#mod-page-tab-videos")).replace(/\D/g, "")) || 0;
 
+    // Endorse state: Nexus renders both actions and hides one; logged out it
+    // renders neither, and the preview then offers no button.
+    const endorseOn = doc.querySelector(`[id^='action-endorse-'][id$='-${mod.modId}']`);
+    const endorseOff = doc.querySelector(`[id^='action-unendorse-'][id$='-${mod.modId}']`);
+    const hidden = (node) => /display\s*:\s*none/i.test(node?.getAttribute("style") || "");
+    const endorse = endorseOn && endorseOff
+      ? { gameId: endorseOn.id.split("-")[2], modId: mod.modId, endorsed: hidden(endorseOn) && !hidden(endorseOff) }
+      : null;
+
     return {
       title,
       url: mod.url,
@@ -151,6 +160,7 @@
       requirements,
       lastDownload,
       videoCount,
+      endorse,
       items: dedupe([...images, ...descriptionVideos])
     };
   }

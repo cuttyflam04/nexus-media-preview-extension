@@ -23,7 +23,7 @@
   const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-  function create({ cssUrl, getSettings, onNavigate, onClose, onPopoverClick, onPosts, actions }) {
+  function create({ cssUrl, getSettings, onNavigate, onClose, onPopoverClick, onPosts, onEndorse, actions }) {
     const host = document.createElement("nmp-root");
     const root = host.attachShadow({ mode: "open" });
     root.innerHTML = `
@@ -40,6 +40,7 @@
               <a class="title" target="_blank" rel="noreferrer"></a>
               <div class="chips"></div>
             </div>
+            <button class="endorse" type="button" data-act="endorse" aria-pressed="false" hidden>${icon("heart")}<span>Endorse</span></button>
             <button class="icon-button" type="button" data-act="close" aria-label="Close" title="Close (Esc)">${icon("close")}</button>
           </header>
           <div class="main">
@@ -111,6 +112,7 @@
     const lbImage = lightbox.querySelector("img");
     const popover = $(".popover");
     const postsCard = $(".posts");
+    const endorseButton = $(".endorse");
     const postsBody = $(".posts-body");
 
     let items = [];
@@ -311,6 +313,17 @@
       }
     }
 
+    // ---------- Endorse ----------
+    function setEndorse(state) {
+      endorseButton.hidden = !state;
+      if (!state) return;
+      endorseButton.disabled = Boolean(state.busy);
+      endorseButton.classList.toggle("is-on", state.endorsed);
+      endorseButton.setAttribute("aria-pressed", String(state.endorsed));
+      endorseButton.querySelector("span").textContent = state.busy ? "Saving…" : state.endorsed ? "Endorsed" : "Endorse";
+      endorseButton.title = state.endorsed ? "Remove your endorsement" : "Endorse this mod on Nexus Mods";
+    }
+
     // ---------- Posts card ----------
     function highlight(text) {
       const html = escapeHtml(text);
@@ -441,7 +454,8 @@
     function setStatus(text) {
       status.textContent = text;
       clearTimeout(statusTimer);
-      statusTimer = setTimeout(() => { status.textContent = ""; }, 1800);
+      // Long messages (e.g. Nexus refusing an endorsement) stay readable.
+      statusTimer = setTimeout(() => { status.textContent = ""; }, Math.max(1800, text.length * 70));
     }
 
     // ---------- Public API ----------
@@ -460,6 +474,7 @@
       title.textContent = entry.title || "Loading…";
       title.href = entry.url || "#";
       renderChips(entry.chips);
+      setEndorse(null);
       items = [];
       videos = [];
       renderVideos();
@@ -613,6 +628,7 @@
         case "next": return show(index + 1);
         case "prev-mod": return onNavigate?.(-1);
         case "posts": return postsCard.hidden ? onPosts?.("open") : closePosts();
+        case "endorse": return onEndorse?.(endorseButton.getAttribute("aria-pressed") !== "true");
         case "close-posts": return closePosts();
         case "more-posts": event.target.disabled = true; event.target.textContent = "Loading…"; return onPosts?.("more", posts?.key);
         case "post-more": event.target.previousElementSibling.classList.add("is-open"); event.target.remove(); return;
@@ -741,6 +757,8 @@
       hidePopover,
       get isOpen() { return !modal.hidden; },
       get postsOpen() { return !postsCard.hidden; },
+      setEndorse,
+      notify: setStatus,
       openPosts,
       addPosts,
       failPosts,
