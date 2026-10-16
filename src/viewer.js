@@ -330,12 +330,13 @@
     }
 
     // ---------- Posts card ----------
+    // Match on the raw text and escape each piece, so terms never land inside
+    // the entities escapeHtml produces (searching "39" vs "&#39;").
     function highlight(text) {
-      const html = escapeHtml(text);
       const terms = (posts?.query || "").split(/\s+/).filter((term) => term.length > 1);
-      if (!terms.length) return html;
-      const pattern = new RegExp(`(${terms.map((term) => escapeHtml(term).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi");
-      return html.replace(pattern, "<mark>$1</mark>");
+      if (!terms.length) return escapeHtml(text);
+      const pattern = new RegExp(`(${terms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi");
+      return text.split(pattern).map((piece, i) => (i % 2 ? `<mark>${escapeHtml(piece)}</mark>` : escapeHtml(piece))).join("");
     }
 
     function renderPost(post, author) {
@@ -427,6 +428,7 @@
     }
 
     function closePosts() {
+      clearTimeout(searchTimer);
       if (postsCard.hidden) return;
       postsCard.hidden = true;
       postsBody.innerHTML = "";
@@ -473,6 +475,10 @@
       if (modal.hidden) drag?.reset(dialog);
       cinema = null;
       if (entry.mode === "cinema") closePosts();
+      else if (!postsCard.hidden && posts?.key !== entry.url) {
+        posts = null;
+        postsBody.innerHTML = '<div class="spinner" role="status" aria-label="Loading posts"></div>';
+      }
       dialog.classList.toggle("cinema", entry.mode === "cinema");
       canNavigate = Boolean(entry.canNavigate);
       $("[data-act='prev-mod']").parentElement.hidden = !canNavigate;
@@ -682,7 +688,7 @@
       else if (inLightbox && (key === "+" || key === "=")) setZoom(zoom.scale * 1.25);
       else if (inLightbox && key === "-") setZoom(zoom.scale / 1.25);
       else if (inLightbox && key === "0") setZoom(1);
-      else if ((key === "Enter" || key === " ") && /^(A|BUTTON)$/.test(event.composedPath()[0]?.tagName || "")) handled = false;
+      else if ((key === "Enter" || key === " ") && /^(A|BUTTON|SUMMARY|INPUT|TEXTAREA|SELECT)$/.test(event.composedPath()[0]?.tagName || "")) handled = false;
       else if (key === "Enter" && !inLightbox) openLightbox();
       else if (key === " ") inLightbox ? closeLightbox() : close();
       else handled = false;
@@ -700,7 +706,7 @@
     }
 
     function trapTab(event, layer) {
-      const focusable = [...layer.querySelectorAll("button, a[href], iframe, summary, [tabindex]:not([tabindex='-1'])")]
+      const focusable = [...layer.querySelectorAll("button, a[href], input, iframe, summary, [tabindex]:not([tabindex='-1'])")]
         .filter((node) => !node.disabled && node.getClientRects().length && !node.closest("[hidden]"));
       if (!focusable.length) return;
       const current = root.activeElement;
@@ -764,6 +770,7 @@
       get postsOpen() { return !postsCard.hidden; },
       setEndorse,
       notify: setStatus,
+      deepActiveElement,
       openPosts,
       addPosts,
       failPosts,

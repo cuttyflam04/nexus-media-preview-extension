@@ -225,12 +225,14 @@
       ? `Mod ${link.modId}`
       : textOf(tile?.querySelector("[data-e2eid='mod-tile-title']")) || target.anchor.querySelector("img")?.alt || textOf(target.anchor) || `Mod ${link.modId}`;
     const chips = chipsFromTile(tile);
-    const canNavigate = (target.kind === "tile" || target.kind === "notification") && modTargets(target.kind, target.anchor.getRootNode()).length > 1;
+    const canNavigate = (target.kind === "tile" || target.kind === "notification")
+      && target.anchor.getRootNode().querySelectorAll(target.kind === "notification" ? NOTIFICATION_IMAGE : MOD_TILE).length > 1;
     viewer.open({ site: "nexus", title, url: link.url, chips, canNavigate, context: target.anchor });
     try {
       const data = await loadMod(link);
       if (token !== openToken) return;
       if (data.blocked === "adult") {
+        viewer.closePosts();
         viewer.update({ title, url: link.url, chips, emptyMessage: "Adult content", emptyDetail: "Log in to Nexus Mods and enable adult content in your settings to preview this mod." });
         return;
       }
@@ -256,7 +258,10 @@
         if (token === openToken) viewer.appendItems(videos);
       }
     } catch (error) {
-      if (token === openToken) viewer.fail(error.message, link.url);
+      if (token === openToken) {
+        viewer.closePosts();
+        viewer.fail(error.message, link.url);
+      }
     }
   }
 
@@ -324,10 +329,10 @@
       if (!response.ok || result.status !== true) throw new Error(result.message || `Nexus answered ${response.status}.`);
       state.endorsed = positive;
       cache.delete(state.key); // the cached page still holds the old state
-      viewer.notify(positive ? "Endorsed, thank you" : "Endorsement removed");
+      if (endorseState === state) viewer.notify(positive ? "Endorsed, thank you" : "Endorsement removed");
     } catch (error) {
       // Nexus explains refusals itself (e.g. download the mod first).
-      viewer.notify(String(error.message).replace(/<[^>]+>/g, "").slice(0, 140));
+      if (endorseState === state) viewer.notify(String(error.message).replace(/<[^>]+>/g, "").slice(0, 140));
     }
     if (endorseState === state) viewer.setEndorse(state);
   }
@@ -363,10 +368,11 @@
     const page = paging.page + 1;
     try {
       const data = await loadPostsPage(paging.widget, page, paging.query);
+      if (postsPaging !== paging) return; // a new search or mod replaced this list
       paging.page = page;
       viewer.addPosts(paging.key, { threads: data.threads, hasMore: page < paging.pageCount });
     } catch (error) {
-      viewer.failPosts(paging.key, error.message);
+      if (postsPaging === paging) viewer.failPosts(paging.key, error.message);
     }
   }
 
@@ -446,12 +452,6 @@
 
   const origin = (event) => event.composedPath()[0];
 
-  function deepActiveElement() {
-    let active = document.activeElement;
-    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
-    return active;
-  }
-
   function deepElementFromPoint(x, y) {
     let element = document.elementFromPoint(x, y);
     while (element?.shadowRoot) {
@@ -519,7 +519,7 @@
   document.addEventListener("keydown", (event) => {
     if (event.key !== " " || event.repeat || event.defaultPrevented || viewer.isOpen || !settings.keyboardShortcuts) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
-    const active = deepActiveElement();
+    const active = viewer.deepActiveElement();
     if (active?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active?.tagName || "")) return;
     // The pointer may rest on a card the preview was covering: look it up again.
     const target = resolveTarget(active)
